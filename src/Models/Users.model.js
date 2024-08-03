@@ -20,6 +20,12 @@ const userSchema = new mongoose.Schema({
       return !this.githubId;
     }
   },
+  accessToken: {
+    type: String
+  },
+  refreshToken: {
+    type: String
+  },
   githubId: {
     type: String,
     unique: true,

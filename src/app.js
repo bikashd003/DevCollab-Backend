@@ -7,12 +7,14 @@ import passport from 'passport';
 import session from 'express-session';
 import { Strategy as GitHubStrategy } from 'passport-github2';
 import { User } from './Models/Users.model.js';
-
+import cookieParser from 'cookie-parser';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
+import chalk from 'chalk';
 dotenv.config({ path: `${__dirname}/.env` });
 import connectDb from './Config/DbConfig.js';
+import { generateAccessToken } from './Controllers/Auth/authentication.controller.js';
+import manualAuthentication from './Routes/Auth/auth.routes.js';
 
 const app = express();
 
@@ -20,6 +22,7 @@ const app = express();
 app.use(cors({ credentials: true, origin: process.env.CLIENT_URL }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser())
 
 // Session configuration
 app.use(session({
@@ -88,7 +91,31 @@ connectDb()
     console.log(err);
   });
 
-
+  // Middleware to log route, time, and errors
+  app.use((req, res, next) => {
+    const start = Date.now();
+    const originalEnd = res.end;
+    const originalJson = res.json;
+  
+    res.end = function(...args) {
+      const duration = Date.now() - start;
+      const status = res.statusCode;
+      const color = status >= 400 ? 'red' : 'green';
+      
+      console.log(chalk[color](`Route: ${req.method} ${req.originalUrl} | Status: ${status} | Duration: ${duration}ms`));
+      
+      originalEnd.apply(res, args);
+    };
+  
+    res.json = function(body) {
+      if (body && body.error) {
+        console.log(chalk.red(`Error on route ${req.method} ${req.originalUrl}: ${body.error}`));
+      }
+      originalJson.apply(res, arguments);
+    };
+  
+    next();
+  });
 // Root route
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to DevLearn API' });
@@ -100,18 +127,22 @@ app.get('/auth/github', passport.authenticate('github', { scope: ['user:email'] 
 app.get('/auth/github/callback',
   passport.authenticate('github', { failureRedirect: '/' }),
   (req, res) => {
+    res.cookie('refreshToken', req.user.refreshToken, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
     console.log('Authentication successful');
-    res.redirect('http://localhost:5173');
+    res.redirect('http://localhost:5173/profile/user');
   }
 );
-
+app.use('/auth/token',generateAccessToken);
+app.use('/auth/manual', manualAuthentication);
 app.get('/auth/github/url', (req, res) => {
   res.json({ url: githubAuthUrl });
 });
 
-// Logout route
-app.get('/logout', (req, res) => {
+//github Logout route
+app.get('/github/logout', (req, res) => {
+  res.clearCookie('refreshToken');
   req.logout();
+  res.redirect('/');
 });
 
 // 404 Error Handler
