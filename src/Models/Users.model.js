@@ -17,7 +17,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     // Required for manual authentication, but not for GitHub auth
     required: function() {
-      return !this.githubId;
+      return !this.githubId && !this.googleId;
     }
   },
   accessToken: {
@@ -30,6 +30,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     unique: true,
     sparse: true  // This allows null values and maintains uniqueness for non-null values
+  },
+  googleId: {
+    type: String,
+    unique: true,
+    sparse: true
   },
   profilePicture: {
     type: String,

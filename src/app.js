@@ -56,27 +56,28 @@ passport.use(new GitHubStrategy({
   clientSecret: process.env.GITHUB_CLIENT_SECRET,
   callbackURL: process.env.GITHUB_CALLBACK_URL
 },
-async (accessToken, refreshToken, profile, done) => {
-  try {
-    let user = await User.findOne({ githubId: profile.id });
-    if (!user) {
-      user = await User.create({
-        githubId: profile.id,
-        username: profile.username,
-        accessToken: accessToken,
-        refreshToken: refreshToken
-      });
-    } else {
-      // Update the tokens
-      user.accessToken = accessToken;
-      user.refreshToken = refreshToken;
-      await user.save();
+  async (accessToken, refreshToken, profile, done) => {
+    try {
+      let user = await User.findOne({ githubId: profile.id });
+      if (!user) {
+        user = await User.create({
+          githubId: profile.id,
+          username: profile.username,
+          profilePicture: profile.photos[0].value,
+          accessToken: accessToken,
+          refreshToken: refreshToken
+        });
+      } else {
+        // Update the tokens
+        user.accessToken = accessToken;
+        user.refreshToken = refreshToken;
+        await user.save();
+      }
+      return done(null, user);
+    } catch (err) {
+      return done(err);
     }
-    return done(null, user);
-  } catch (err) {
-    return done(err);
   }
-}
 ));
 const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${process.env.GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(process.env.GITHUB_CALLBACK_URL)}`;
 
@@ -91,31 +92,31 @@ connectDb()
     console.log(err);
   });
 
-  // Middleware to log route, time, and errors
-  app.use((req, res, next) => {
-    const start = Date.now();
-    const originalEnd = res.end;
-    const originalJson = res.json;
-  
-    res.end = function(...args) {
-      const duration = Date.now() - start;
-      const status = res.statusCode;
-      const color = status >= 400 ? 'red' : 'green';
-      
-      console.log(chalk[color](`Route: ${req.method} ${req.originalUrl} | Status: ${status} | Duration: ${duration}ms`));
-      
-      originalEnd.apply(res, args);
-    };
-  
-    res.json = function(body) {
-      if (body && body.error) {
-        console.log(chalk.red(`Error on route ${req.method} ${req.originalUrl}: ${body.error}`));
-      }
-      originalJson.apply(res, arguments);
-    };
-  
-    next();
-  });
+// Middleware to log route, time, and errors
+app.use((req, res, next) => {
+  const start = Date.now();
+  const originalEnd = res.end;
+  const originalJson = res.json;
+
+  res.end = function (...args) {
+    const duration = Date.now() - start;
+    const status = res.statusCode;
+    const color = status >= 400 ? 'red' : 'green';
+
+    console.log(chalk[color](`Route: ${req.method} ${req.originalUrl} | Status: ${status} | Duration: ${duration}ms`));
+
+    originalEnd.apply(res, args);
+  };
+
+  res.json = function (body) {
+    if (body && body.error) {
+      console.log(chalk.red(`Error on route ${req.method} ${req.originalUrl}: ${body.error}`));
+    }
+    originalJson.apply(res, arguments);
+  };
+
+  next();
+});
 // Root route
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to DevLearn API' });
@@ -126,15 +127,17 @@ app.get('/auth/github', passport.authenticate('github', { scope: ['user:email'] 
 
 app.get('/auth/github/callback',
   passport.authenticate('github', { failureRedirect: '/' }),
-  (req, res) => {
-    const token = generateJWT(req.user); 
-    res.cookie('token',token, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
-    res.cookie('refreshToken',req.user.refreshToken, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+  async (req, res) => {
+    const token = generateJWT(req.user);
+    res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+    res.cookie('refreshToken', req.user.refreshToken, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
     console.log('Authentication successful');
-    res.redirect('http://localhost:5173/profile/user');
+    const user = await User.findOne({ refreshToken: req.user.refreshToken });
+    res.redirect(`http://localhost:5173/profile/${user?.username}`);
+
   }
 );
-app.use('/auth/token',generateAccessToken);
+app.use('/auth/token', generateAccessToken);
 app.use('/auth/manual', manualAuthentication);
 app.get('/auth/github/url', (req, res) => {
   res.json({ url: githubAuthUrl });
