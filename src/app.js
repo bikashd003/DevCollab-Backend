@@ -15,7 +15,7 @@ dotenv.config({ path: `${__dirname}/.env` });
 import connectDb from './Config/DbConfig.js';
 import { generateAccessToken } from './Controllers/Auth/authentication.controller.js';
 import manualAuthentication from './Routes/Auth/auth.routes.js';
-
+import generateJWT from './Config/GenerateJwt.js';
 const app = express();
 
 // Middleware
@@ -127,7 +127,9 @@ app.get('/auth/github', passport.authenticate('github', { scope: ['user:email'] 
 app.get('/auth/github/callback',
   passport.authenticate('github', { failureRedirect: '/' }),
   (req, res) => {
-    res.cookie('refreshToken', req.user.refreshToken, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+    const token = generateJWT(req.user); 
+    res.cookie('token',token, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+    res.cookie('refreshToken',req.user.refreshToken, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
     console.log('Authentication successful');
     res.redirect('http://localhost:5173/profile/user');
   }
@@ -140,7 +142,7 @@ app.get('/auth/github/url', (req, res) => {
 
 //github Logout route
 app.get('/github/logout', (req, res) => {
-  res.clearCookie('refreshToken');
+  res.clearCookie('token');
   req.logout();
   res.redirect('/');
 });
