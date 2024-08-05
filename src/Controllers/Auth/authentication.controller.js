@@ -1,5 +1,4 @@
-import { User } from "../../Models/Users.model.js";
-import axios from "axios";
+import { User } from "../../Models/Users/Users.model.js";
 import generateJWT from "../../Config/GenerateJwt.js";
 const register = async (req, res) => {
   try {

@@ -44,10 +44,6 @@ const userSchema = new mongoose.Schema({
     type: String,
     maxlength: 500
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
   lastLogin: {
     type: Date
   },
@@ -59,7 +55,27 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['user', 'admin'],
     default: 'user'
-  }
+  },
+  skills: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Skill'
+  }],
+  socialLinks: [{
+    type:mongoose.Schema.Types.ObjectId,
+    ref:'SocialLink'
+  }],
+  contact:{
+    type:mongoose.Schema.Types.ObjectId,
+    ref:'Contact'
+  },
+  activities: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Activity'
+  },
+  project:[{
+    type:mongoose.Schema.Types.ObjectId,
+    ref:'Project'
+  }]
 }, { timestamps: true });
 
 // Add any pre-save hooks, methods, or statics here if needed

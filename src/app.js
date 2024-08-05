@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 import passport from 'passport';
 import session from 'express-session';
 import { Strategy as GitHubStrategy } from 'passport-github2';
-import { User } from './Models/Users.model.js';
+import { User } from './Models/Users/Users.model.js';
 import cookieParser from 'cookie-parser';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -16,6 +16,7 @@ import connectDb from './Config/DbConfig.js';
 import { generateAccessToken } from './Controllers/Auth/authentication.controller.js';
 import manualAuthentication from './Routes/Auth/auth.routes.js';
 import generateJWT from './Config/GenerateJwt.js';
+import { globalErrorHandler } from './Utils/AppError.js';
 const app = express();
 
 // Middleware
@@ -35,7 +36,7 @@ app.use(session({
 // Passport initialization
 app.use(passport.initialize());
 app.use(passport.session());
-
+app.use(globalErrorHandler)
 // Passport serialization
 passport.serializeUser((user, done) => {
   done(null, user.id);
@@ -146,6 +147,7 @@ app.get('/auth/github/url', (req, res) => {
 //github Logout route
 app.get('/github/logout', (req, res) => {
   res.clearCookie('token');
+  res.clearCookie('refreshToken');
   req.logout();
   res.redirect('/');
 });
