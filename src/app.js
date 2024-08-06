@@ -17,6 +17,9 @@ import { generateAccessToken } from './Controllers/Auth/authentication.controlle
 import manualAuthentication from './Routes/Auth/auth.routes.js';
 import generateJWT from './Config/GenerateJwt.js';
 import { globalErrorHandler } from './Utils/AppError.js';
+import {ApolloServer} from 'apollo-server-express'
+import typeDefs from './Graphql/GraphQL.schema.js';
+import resolvers from './Graphql/GraphQL.resolver.js';
 const app = express();
 
 // Middleware
@@ -92,6 +95,18 @@ connectDb()
   .catch((err) => {
     console.log(err);
   });
+// Create Apollo Server
+const server = new ApolloServer({ typeDefs, resolvers});
+
+// Start the server and apply middleware
+async function startServer() {
+  await server.start();
+  server.applyMiddleware({ app });
+  console.log(`GraphQL Playground available at http://localhost:${process.env.PORT}${server.graphqlPath}`);
+}
+
+startServer();
+
 
 // Middleware to log route, time, and errors
 app.use((req, res, next) => {

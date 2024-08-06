@@ -4,7 +4,7 @@ const skillSchema=new Schema({
         type:String,
         required:true
     },
-    level:{
+    proficiency:{
         type:String,
         enum:['beginner','intermediate','advanced'],
         required:true
