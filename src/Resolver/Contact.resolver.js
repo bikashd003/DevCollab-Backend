@@ -1,6 +1,6 @@
 import { Contact } from "../Models/Users/Contact.Model.js";
 const contactResolvers={
-    query:{
+    Query:{
         contacts:async ()=>await Contact.find(),
         contact:async (_,{id})=>await Contact.findById(id)
     },

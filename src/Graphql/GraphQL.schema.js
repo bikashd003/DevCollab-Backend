@@ -1,4 +1,5 @@
 import  { gql } from 'apollo-server-express';
+import { userTypeDefs } from '../Schema/Users.schema.js';
 import { socialLinkTypeDefs } from '../Schema/SocialLinks.schema.js';
 import { skillTypeDefs } from '../Schema/Skills.schema.js';
 import { projectTypeDefs } from '../Schema/Project.schema.js';
@@ -11,6 +12,7 @@ const rootTypeDefs = gql`
 `;
 
 const typeDefs = [
+  userTypeDefs,
   rootTypeDefs,
   skillTypeDefs,
   socialLinkTypeDefs,

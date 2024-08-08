@@ -1,5 +1,5 @@
-import  { gql } from 'apollo-server-express'; 
-
+import pkg from 'apollo-server-express';
+const {gql} = pkg;
 const contactTypeDefs = gql`
   type Contact {
     id: ID!
