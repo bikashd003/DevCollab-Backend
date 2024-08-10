@@ -10,25 +10,29 @@ import { ApolloServer } from 'apollo-server-express'
 import typeDefs from './Graphql/GraphQL.schema.js';
 import resolvers from './Graphql/GraphQL.resolver.js';
 import Root from './Middleware/Root.middlleware.js';
-
+import authenticateJWT from './Middleware/Auth/Auth.middleware.js';
 const app = express();
-app.use((req, res, next) => {
-  console.log(`Request received: ${req.method} ${req.url}`);
-  next();
-});
-
 // Start Apollo Server
 const startServer = async () => {
   // Apollo Server setup
   const server = new ApolloServer({
     typeDefs,
     resolvers,
+    context: ({ req }) => ({
+      user: req.user, 
+    })
   });
 
   await server.start();
-
+  app.use('/graphql', authenticateJWT);
   // Apply Apollo middleware after other middlewares
-  server.applyMiddleware({ app });
+  server.applyMiddleware({ 
+    app,
+    cors: {
+      origin: process.env.CLIENT_URL,
+      credentials: true,
+    }
+  });
   // Connect to MongoDB and start the server
   try {
     await connectDb();

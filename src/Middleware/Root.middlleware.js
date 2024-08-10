@@ -111,8 +111,8 @@ const Root = (app) => {
         passport.authenticate('github', { failureRedirect: '/' }),
         async (req, res) => {
             const token = generateJWT(req.user);
-            res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
-            res.cookie('refreshToken', req.user.refreshToken, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+            res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production',maxAge: 60 * 60* 24 * 1000, });
+            res.cookie('refreshToken', req.user.refreshToken, { httpOnly: true, secure: process.env.NODE_ENV === 'production',maxAge: 60 * 60* 24 * 1000, });
             console.log('Authentication successful');
             const user = await User.findOne({ refreshToken: req.user.refreshToken });
             res.redirect(`http://localhost:5173/profile/${user?.username}`);
