@@ -10,6 +10,7 @@ import { generateAccessToken } from "../Controllers/Auth/authentication.controll
 import generateJWT from '../Config/GenerateJwt.js';
 import { globalErrorHandler } from '../Utils/AppError.js';
 import chalk from 'chalk';
+import uploadRouter from '../Routes/Upload/cloudinaryUpload.routes.js';
 
 const Root = (app) => {
     app.use(cors({ credentials: true, origin: process.env.CLIENT_URL }));
@@ -115,7 +116,7 @@ const Root = (app) => {
             res.cookie('refreshToken', req.user.refreshToken, { httpOnly: true, secure: process.env.NODE_ENV === 'production',maxAge: 60 * 60* 24 * 1000, });
             console.log('Authentication successful');
             const user = await User.findOne({ refreshToken: req.user.refreshToken });
-            res.redirect(`http://localhost:5173/profile/${user?.username}`);
+            res.redirect(`http://localhost:5173/home/${user?.username}`);
 
         }
     );
@@ -128,10 +129,17 @@ const Root = (app) => {
     app.get('/github/logout', (req, res) => {
         res.clearCookie('token');
         res.clearCookie('refreshToken');
-        req.logout();
-        res.redirect('/');
+        req.logout((err) => {
+            if (err) {
+                console.error('Error during logout:', err);
+                return res.status(500).send('Internal Server Error');
+            }
+            // Logout successful
+            res.redirect('/');
+        });
     });
 
+    app.use('/cloudinary', uploadRouter)
 
     // Global Error Handler
     app.use((err, req, res, next) => {

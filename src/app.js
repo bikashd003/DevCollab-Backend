@@ -10,7 +10,7 @@ import { ApolloServer } from 'apollo-server-express'
 import typeDefs from './Graphql/GraphQL.schema.js';
 import resolvers from './Graphql/GraphQL.resolver.js';
 import Root from './Middleware/Root.middlleware.js';
-import authenticateJWT from './Middleware/Auth/Auth.middleware.js';
+import authMiddleware from './Middleware/Auth/Auth.middleware.js';
 const app = express();
 // Start Apollo Server
 const startServer = async () => {
@@ -24,7 +24,7 @@ const startServer = async () => {
   });
 
   await server.start();
-  app.use('/graphql', authenticateJWT);
+  app.use('/graphql', authMiddleware);
   // Apply Apollo middleware after other middlewares
   server.applyMiddleware({ 
     app,

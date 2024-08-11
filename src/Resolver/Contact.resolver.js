@@ -8,8 +8,7 @@ const contactResolvers = {
         }
         return await Contact.find();
       },
-      contact: async (parent, { id }, context) => {
-        console.log(context)
+    contact: async (parent, { id }, context) => {
         if (!context.user) {
           throw new AuthenticationError('You must be logged in');
         }
