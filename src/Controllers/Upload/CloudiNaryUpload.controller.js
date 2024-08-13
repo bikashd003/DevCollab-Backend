@@ -8,42 +8,45 @@ const storage = multer.diskStorage({
     },
 });
 
+const fileFilter = (req, file, cb) => {
+    const fileTypes = /jpeg|jpg|png/;
+    const extname = fileTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = fileTypes.test(file.mimetype);
+    if (mimetype && extname) {
+        return cb(null, true);
+    } else {
+        cb(new Error('Error: Images Only!'));
+    }
+};
+
 const upload = multer({
     storage,
-    fileFilter: (req, file, cb) => {
-        const fileTypes = /jpeg|jpg|png/;
-        const extname = fileTypes.test(path.extname(file.originalname).toLowerCase());
-        const mimetype = fileTypes.test(file.mimetype);
-        if (mimetype && extname) {
-            return cb(null, true);
-        } else {
-            cb('Error: Images Only!');
-        }
-    },
-    limits: { fileSize: 2 * 1024 * 1024 },
+    fileFilter,
+    limits: { fileSize: 10 * 1024 * 1024 },
 }).single('image');
 
 const uploadImage = async (req, res) => {
-    console.log(req.file)
-    upload(req, res, async (err) => {
-        if (err) {
-            return res.status(400).json({ error: err.message });
-        }
+    try {
+        await new Promise((resolve, reject) => {
+            upload(req, res, (err) => {
+                if (err) reject(err);
+                else resolve();
+            });
+        });
 
         if (!req.file) {
             return res.status(400).json({ error: 'No file uploaded' });
         }
 
-        try {
-            const result = await cloudinary.uploader.upload(req.file.path, {
-                folder: 'Projects', // Specify the folder in Cloudinary
-            });
+        const result = await cloudinary.uploader.upload(req.file.path, {
+            folder: 'Projects', // Specify the folder in Cloudinary
+        });
 
-            // Return the URL of the uploaded image
-            return res.status(200).json({ imageUrl: result.secure_url });
-        } catch (error) {
-            return res.status(500).json({ error: 'Failed to upload image to Cloudinary' });
-        }
-    });
+        // Return the URL of the uploaded image
+        return res.status(200).json({ imageUrl: result.secure_url });
+    } catch (error) {
+        return res.status(500).json({ error: error.message || 'Failed to upload image' });
+    }
 };
+
 export default uploadImage;
