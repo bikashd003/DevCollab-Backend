@@ -4,8 +4,7 @@ const skillTypeDefs = gql`
   type Skill {
     id: ID!
     title: String!
-    proficiency: String
-    category: String!
+    proficiency: Int
   }
 
   extend type Query {
@@ -14,8 +13,8 @@ const skillTypeDefs = gql`
   }
 
   extend type Mutation {
-    createSkill(title: String!, proficiency: String,category: String): Skill
-    updateSkill(id: ID!, title: String, proficiency: String,category:String): Skill
+    createSkill(title: String!, proficiency: Int): Skill
+    updateSkill(id: ID!, title: String, proficiency: Int): Skill
     deleteSkill(id: ID!): Skill
   }
 `;
