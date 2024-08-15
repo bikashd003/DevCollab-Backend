@@ -5,8 +5,8 @@ const projectTypeDefs = gql`
     id: ID!
     title: String!
     description: String
-    image: String
-    link: String!
+    imageUrl: String
+    projectLink: String!
   }
 
   extend type Query {
@@ -15,8 +15,8 @@ const projectTypeDefs = gql`
   }
 
   extend type Mutation {
-    createProject(title: String!, description: String, image: String,link: String!): Project
-    updateProject(id: ID!, title: String, description: String, image: String,link: String!): Project
+    createProject(title: String!, description: String, imageUrl: String,projectLink: String!): Project
+    updateProject(id: ID!, title: String, description: String, imageUrl: String,projectLink: String!): Project
     deleteProject(id: ID!): Project
   }
 `;

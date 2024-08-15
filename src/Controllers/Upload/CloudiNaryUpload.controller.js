@@ -1,7 +1,7 @@
 import cloudinary from "../../Config/Cloudinary.js"
 import multer from "multer"
 import path from "path"
-
+import { AppError } from "../../Utils/AppError.js"
 const storage = multer.diskStorage({
     filename: (req, file, cb) => {
         cb(null, `${Date.now()}-${file.originalname}`)
@@ -35,18 +35,39 @@ const uploadImage = async (req, res) => {
         });
 
         if (!req.file) {
-            return res.status(400).json({ error: 'No file uploaded' });
+            throw new AppError('No file uploaded', 400);
         }
 
         const result = await cloudinary.uploader.upload(req.file.path, {
-            folder: 'Projects', // Specify the folder in Cloudinary
+            folder: 'Projects',
         });
 
-        // Return the URL of the uploaded image
-        return res.status(200).json({ imageUrl: result.secure_url });
+        return res.status(200).json({
+            imageUrl: result.secure_url,
+            publicId: result.public_id
+        });
     } catch (error) {
-        return res.status(500).json({ error: error.message || 'Failed to upload image' });
+        throw new AppError(error.message, 500);
     }
 };
+const deleteImage = async (req, res) => {
+    try {
+        const { publicId } = req.body;
 
-export default uploadImage;
+        if (!publicId) {
+            return res.status(400).json({ error: 'Public ID is required' });
+        }
+
+        // Delete the image from Cloudinary
+        const result = await cloudinary.uploader.destroy(publicId);
+
+        if (result.result === 'ok') {
+            return res.status(200).json({ message: 'Image deleted successfully' });
+        } else {
+            throw new AppError('Image not found or already deleted', 404);
+        }
+    } catch (error) {
+        throw new AppError(error.message, 500);
+    }
+};
+export { uploadImage, deleteImage };

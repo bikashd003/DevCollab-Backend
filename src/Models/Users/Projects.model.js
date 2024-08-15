@@ -8,10 +8,10 @@ const projectSchema = new Schema({
         type:String,
         required:true
     },
-    image:{
+    imageUrl: {
         type:String,
     },
-    link:{
+    projectLink: {
         type:String,
         required:true
     }
