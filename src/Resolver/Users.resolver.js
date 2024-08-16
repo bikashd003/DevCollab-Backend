@@ -8,19 +8,30 @@ const usersResolvers = {
         }
         return await User.find();
       },
-      user: async (parent, args,context) => {
+    user: async (parent, args, context) => {
         if (!context.user) {
           throw new AuthenticationError('You must be logged in');
         }
-        return await User.findById(args.id);
-      },
-    },
+      const userQuery = User.findById(context.user.id)
+        .populate('projects')
+        .populate('skills')
+        .lean();
+      const user = await userQuery;
+      return user;
+    }
+  },
     Mutation: {
-      createUser: async (parent, args) => {
+      createUser: async (parent, args, context) => {
+        if (!context.user) {
+          throw new AuthenticationError('You must be logged in');
+        }
         const newUser = new User(args);
         return await newUser.save();
       },
-      deleteUser: async (parent, args) => {
+      deleteUser: async (parent, args, context) => {
+        if (!context.user) {
+          throw new AuthenticationError('You must be logged in');
+        }
         const deletedUser = await User.findByIdAndRemove(args.id);
         return deletedUser;
       },

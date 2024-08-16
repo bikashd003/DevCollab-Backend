@@ -1,6 +1,18 @@
 import pkg from 'apollo-server-express';
-const {gql} = pkg;
+const { gql } = pkg;
 const userTypeDefs = gql`
+type Skill {
+  id: ID!
+  title: String!
+  proficiency: Int!
+}
+type Project {
+  id: ID!
+  title: String!
+  description: String!
+  imageUrl: String
+  projectLink: String
+}
 type User {
     id: ID!
     username: String!
@@ -12,9 +24,9 @@ type User {
     githubId: String
     googleId: String
     socialLinks: [String]
-    skills: [String]
+    skills: [Skill!]
     contacts: [String]
-    projects: [String]
+    projects: [Project!]
     activities: [String]
     role: String
     createdAt: String
@@ -23,7 +35,7 @@ type User {
 
  extend type Query {
     users: [User]
-    user(id: ID!): User
+    user: User
   }
 
  extend type Mutation {
@@ -32,4 +44,4 @@ type User {
   }
 `;
 
-export {userTypeDefs};
+export { userTypeDefs };

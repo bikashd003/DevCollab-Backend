@@ -42,7 +42,7 @@ const projectResolvers = {
       if (!deletedProject) {
         throw new Error('Project not found');
       }
-      await User.findByIdAndUpdate(context.user._id, { $pull: { projects: args.id } });
+      await User.findByIdAndUpdate(context.user.id, { $pull: { projects: args.id } });
       return deletedProject;
     },
   },
