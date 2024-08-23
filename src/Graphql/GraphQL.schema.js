@@ -5,6 +5,7 @@ import { skillTypeDefs } from '../Schema/Skills.schema.js';
 import { projectTypeDefs } from '../Schema/Project.schema.js';
 import { contactTypeDefs } from '../Schema/Contact.schema.js';
 import { activityTypeDefs } from '../Schema/Activities.schema.js';
+import { questionTypeDefs } from '../Schema/Questions/Question.schema.js';
 
 const rootTypeDefs = gql`
   type Query
@@ -19,6 +20,7 @@ const typeDefs = [
   contactTypeDefs,
   activityTypeDefs,
   projectTypeDefs,
+  questionTypeDefs
 ];
 
 export default typeDefs;

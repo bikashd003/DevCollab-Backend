@@ -4,6 +4,7 @@ import { socialLinkResolvers } from '../Resolver/SocialLinks.resolver.js';
 import { projectResolvers } from '../Resolver/Project.resolver.js';
 import { contactResolvers } from '../Resolver/Contact.resolver.js';
 import { activityResolvers } from '../Resolver/Activities.resolver.js';
+import { questionResolvers } from '../Resolver/Questions/Question.resolver.js';
 const resolvers = {
   Query: {
     ...usersResolvers.Query,
@@ -12,6 +13,7 @@ const resolvers = {
     ...contactResolvers.Query,
     ...activityResolvers.Query,
     ...projectResolvers.Query,
+    ...questionResolvers.Query,
   },
   Mutation: {
     ...usersResolvers.Mutation,
@@ -20,6 +22,7 @@ const resolvers = {
     ...contactResolvers.Mutation,
     ...activityResolvers.Mutation,
     ...projectResolvers.Mutation,
+    ...questionResolvers.Mutation,
   },
 };
 
