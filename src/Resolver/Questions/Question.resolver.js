@@ -1,8 +1,12 @@
 import { Question } from "../../Models/Questions/Question.model.js";
 const questionResolvers = {
     Query: {
-        getQuestions: async () => await Question.find(),
-        getQuestion: async (parent, args) => await Question.findById(args.id),
+        getQuestions: async () => {
+            return await Question.find().populate("author").exec();
+        },
+        getQuestion: async (parent, args) => {
+            return await Question.findById(args.id)
+        },
     },
     Mutation: {
         createQuestion: async (parent, args) => {
