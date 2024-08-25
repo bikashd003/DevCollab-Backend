@@ -16,6 +16,7 @@ type Question {
 extend type Query {
   getQuestions(limit: Int!, offset: Int!): QuestionsResponse!
   getQuestion(id: ID!): Question!
+  searchQuestions(searchTerm: String!, limit: Int!, offset: Int!,tags: [String], userId: ID): QuestionsResponse!
 }
 
 type QuestionsResponse {
