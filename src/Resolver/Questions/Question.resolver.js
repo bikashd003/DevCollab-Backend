@@ -1,4 +1,5 @@
 import { Question } from "../../Models/Questions/Question.model.js";
+import { User } from "../../Models/Users/Users.model.js"
 const questionResolvers = {
     Query: {
         getQuestions: async (_, { limit, offset }) => {
@@ -30,13 +31,14 @@ const questionResolvers = {
                 query.tags = { $in: tags };
             }
             if (userId) {
-                query['author.id'] = userId;
+                const user = User.findOne({ username: userId })
+                query['author.id'] = user._id;
             }
             const questions = await Question.find(query)
                 .skip(offset)
                 .limit(limit)
                 .populate('author');
-
+            console.log(questions)
             const totalCount = await Question.countDocuments(query);
 
             return {
