@@ -1,7 +1,7 @@
 import { Blog } from '../../Models/Blogs/Blogs.model.js';
 import { User } from '../../Models/Users/Users.model.js';
 
-const blogResolvers = {
+export const blogResolvers = {
     Query: {
         // Fetch all blogs
         getBlogs: async () => {
@@ -97,4 +97,3 @@ const blogResolvers = {
     }
 };
 
-export default blogResolvers;
