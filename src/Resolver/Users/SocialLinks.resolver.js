@@ -1,4 +1,4 @@
-import { SocialLink } from "../Models/Users/SocialLinks.model.js";
+import { SocialLink } from "../../Models/Users/SocialLinks.model.js";
 
 const socialLinkResolvers = {
   Query: {
@@ -21,4 +21,4 @@ const socialLinkResolvers = {
   },
 };
 
-export {socialLinkResolvers};
+export { socialLinkResolvers };

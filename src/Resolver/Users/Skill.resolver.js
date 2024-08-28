@@ -1,5 +1,5 @@
-import { Skill } from "../Models/Users/Skills.model.js";
-import { User } from "../Models/Users/Users.model.js";
+import { Skill } from "../../Models/Users/Skills.model.js";
+import { User } from "../../Models/Users/Users.model.js";
 
 const skillResolvers = {
   Query: {
@@ -49,4 +49,4 @@ const skillResolvers = {
   },
 };
 
-export  {skillResolvers};
+export { skillResolvers };

@@ -1,5 +1,5 @@
-import { Project } from "../Models/Users/Projects.model.js";
-import { User } from "../Models/Users/Users.model.js";
+import { Project } from "../../Models/Users/Projects.model.js";
+import { User } from "../../Models/Users/Users.model.js";
 const projectResolvers = {
   Query: {
     projects: async (parent, args, context) => {
@@ -48,4 +48,4 @@ const projectResolvers = {
   },
 };
 
-export {projectResolvers};
+export { projectResolvers };

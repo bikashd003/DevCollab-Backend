@@ -1,4 +1,4 @@
-import { Activity } from "../Models/Users/Activities.model.js";
+import { Activity } from "../../Models/Users/Activities.model.js";
 
 const activityResolvers = {
   Query: {
@@ -21,4 +21,4 @@ const activityResolvers = {
   },
 };
 
-export {activityResolvers};
+export { activityResolvers };

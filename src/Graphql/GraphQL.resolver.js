@@ -1,10 +1,11 @@
-import { usersResolvers } from '../Resolver/Users.resolver.js';
-import { skillResolvers } from '../Resolver/Skill.resolver.js';
-import { socialLinkResolvers } from '../Resolver/SocialLinks.resolver.js';
-import { projectResolvers } from '../Resolver/Project.resolver.js';
-import { contactResolvers } from '../Resolver/Contact.resolver.js';
-import { activityResolvers } from '../Resolver/Activities.resolver.js';
+import { usersResolvers } from '../Resolver/Users/Users.resolver.js';
+import { skillResolvers } from '../Resolver/Users/Skill.resolver.js';
+import { socialLinkResolvers } from '../Resolver/Users/SocialLinks.resolver.js';
+import { projectResolvers } from '../Resolver/Users/Project.resolver.js';
+import { contactResolvers } from '../Resolver/Users/Contact.resolver.js';
+import { activityResolvers } from '../Resolver/Users/Activities.resolver.js';
 import { questionResolvers } from '../Resolver/Questions/Question.resolver.js';
+import { blogResolvers } from '../Resolver/Blogs/Blogs.resolver.js';
 const resolvers = {
   Query: {
     ...usersResolvers.Query,
@@ -14,6 +15,7 @@ const resolvers = {
     ...activityResolvers.Query,
     ...projectResolvers.Query,
     ...questionResolvers.Query,
+    ...blogResolvers.Query,
   },
   Mutation: {
     ...usersResolvers.Mutation,
@@ -23,6 +25,7 @@ const resolvers = {
     ...activityResolvers.Mutation,
     ...projectResolvers.Mutation,
     ...questionResolvers.Mutation,
+    ...blogResolvers.Mutation,
   },
 };
 
