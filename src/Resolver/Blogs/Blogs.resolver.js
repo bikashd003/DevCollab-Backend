@@ -1,13 +1,13 @@
 import { Blog } from '../../Models/Blogs/Blogs.model.js';
-import { User } from '../../Models/Users/Users.model.js';
 
 export const blogResolvers = {
     Query: {
         // Fetch all blogs
         getBlogs: async () => {
             try {
-                return await Blog.find().populate('author').populate('comments.author').populate('likes').populate('dislikes');
+                return await Blog.find().populate('author').populate('comments.author').populate('likes');
             } catch (error) {
+                console.log(error);
                 throw new Error('Error fetching blogs');
             }
         },
@@ -24,29 +24,25 @@ export const blogResolvers = {
 
     Mutation: {
         // Create a new blog
-        createBlog: async (_, { input }) => {
-            const { title, content, authorId } = input;
+        createBlog: async (_, args) => {
+            const { title, content } = args;
             try {
                 const newBlog = new Blog({
                     title,
                     content,
-                    author: authorId,
+                    author: "66b7b5c58020ef32626cbbfd",
                 });
                 await newBlog.save();
-                return newBlog.populate('author').populate('comments.author').populate('likes').populate('dislikes');
+                return newBlog;
             } catch (error) {
                 throw new Error('Error creating blog');
             }
         },
 
         // Update an existing blog
-        updateBlog: async (_, { id, input }) => {
+        updateBlog: async (_, { id, args }) => {
             try {
-                const updatedBlog = await Blog.findByIdAndUpdate(id, input, { new: true })
-                    .populate('author')
-                    .populate('comments.author')
-                    .populate('likes')
-                    .populate('dislikes');
+                const updatedBlog = await Blog.findByIdAndUpdate(id, args, { new: true })
                 if (!updatedBlog) {
                     throw new Error('Blog not found');
                 }
@@ -67,33 +63,25 @@ export const blogResolvers = {
             } catch (error) {
                 throw new Error('Error deleting blog');
             }
+        },
+        //like blog
+        likeBlog: async (_, { blogId, userId }) => {
+            try {
+                const blog = await Blog.findById(blogId);
+                if (!blog) {
+                    throw new Error('Blog not found');
+                }
+                if (blog.likes.includes(userId)) {
+                    blog.likes = blog.likes.filter(id => id !== userId);
+                } else {
+                    blog.likes.push(userId);
+                }
+                await blog.save();
+                return blog;
+            } catch (error) {
+                throw new Error('Error liking blog');
+            }
         }
     },
-
-    // Resolver for nested types
-    Blog: {
-        // Populate the author field for each blog
-        author: async (blog) => {
-            return await User.findById(blog.author);
-        },
-
-        // Populate the comments field for each blog
-        comments: async (blog) => {
-            return blog.comments.map(async (comment) => ({
-                ...comment._doc,
-                author: await User.findById(comment.author),
-            }));
-        },
-
-        // Populate the likes field for each blog
-        likes: async (blog) => {
-            return blog.likes.map(async (userId) => await User.findById(userId));
-        },
-
-        // Populate the dislikes field for each blog
-        dislikes: async (blog) => {
-            return blog.dislikes.map(async (userId) => await User.findById(userId));
-        }
-    }
 };
 

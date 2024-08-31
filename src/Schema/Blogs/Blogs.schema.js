@@ -8,7 +8,6 @@ const blogTypeDefs = gql`
     author: User!
     comments: [Comment!]!
     likes: [User!]
-    dislikes: [User!]
     createdAt: String!
     updatedAt: String!
   }
@@ -26,22 +25,11 @@ const blogTypeDefs = gql`
     getBlogById(id: ID!): Blog
   }
 
-  input CreateBlogInput {
-    title: String!
-    content: String!
-    authorId: ID!
-  }
-
-  input UpdateBlogInput {
-    title: String
-    content: String
-    authorId: ID
-  }
-
   extend type Mutation {
-    createBlog(input: CreateBlogInput!): Blog!
-    updateBlog(id: ID!, input: UpdateBlogInput!): Blog!
+    createBlog(title:String!, content: String!): Blog!
+    updateBlog(id: ID!,title:String!, content: String! ): Blog!
     deleteBlog(id: ID!): Boolean!
+    likeBlog(blogId: ID!,userId: ID): Blog!
   }
 `;
 
