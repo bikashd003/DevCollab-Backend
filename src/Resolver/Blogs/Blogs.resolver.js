@@ -15,7 +15,7 @@ export const blogResolvers = {
         // Fetch a single blog by ID
         getBlogById: async (_, { id }) => {
             try {
-                return await Blog.findById(id).populate('author').populate('comments.author').populate('likes').populate('dislikes');
+                return await Blog.findById(id).populate('author').populate('comments.author').populate('likes');
             } catch (error) {
                 throw new Error('Blog not found');
             }
