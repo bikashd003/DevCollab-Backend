@@ -1,20 +1,15 @@
-
 import passport from 'passport';
 import express from 'express';
 import session from 'express-session';
-import { Strategy as GitHubStrategy } from 'passport-github2';
-import { User } from '../Models/Users/Users.model.js';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
-import { generateAccessToken } from "../Controllers/Auth/authentication.controller.js";
-import generateJWT from '../Config/GenerateJwt.js';
 import { globalErrorHandler } from '../Utils/AppError.js';
 import chalk from 'chalk';
 import uploadRouter from '../Routes/Upload/cloudinaryUpload.routes.js';
 import logger from '../Utils/Logger.js';
 import { apiLimiter } from '../Utils/ApiLimiter.js';
 import helmet from 'helmet';
-import setupLocalAuth from '../Auth/LocalAuth.js';
+import setupLocalAuth, { checkRememberMeCookie } from '../Auth/LocalAuth.js';
 import localAuthRouter from '../Routes/Auth/LocalAuth.routes.js';
 
 
@@ -73,6 +68,7 @@ const Root = (app) => {
 
     //Local auth routes
     app.use('/auth', localAuthRouter);
+    app.use(checkRememberMeCookie)
     // Logout route
     app.get('/logout', (req, res) => {
         req.logout((err) => {

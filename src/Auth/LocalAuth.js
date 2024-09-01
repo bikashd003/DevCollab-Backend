@@ -64,5 +64,31 @@ const setupLocalAuth = (passport) => {
             done(err);
         }
     });
+
+};
+// Middleware to check for Remember Me cookie
+export const checkRememberMeCookie = async (req, res, next) => {
+    const token = req.cookies.rememberMe;
+    if (!token) {
+        return next();
+    }
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const user = await User.findById(decoded.id);
+        if (user) {
+            req.login(user, (err) => {
+                if (err) {
+                    return next(err);
+                }
+                return next();
+            });
+        } else {
+            next();
+        }
+    } catch (err) {
+        res.clearCookie('rememberMe');
+        next();
+    }
 };
 export default setupLocalAuth;
