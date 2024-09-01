@@ -11,6 +11,7 @@ import generateJWT from '../Config/GenerateJwt.js';
 import { globalErrorHandler } from '../Utils/AppError.js';
 import chalk from 'chalk';
 import uploadRouter from '../Routes/Upload/cloudinaryUpload.routes.js';
+import logger from '../Utils/Logger.js';
 
 const Root = (app) => {
     app.use(cors({ credentials: true, origin: process.env.CLIENT_URL }));
@@ -88,16 +89,22 @@ const Root = (app) => {
         res.end = function (...args) {
             const duration = Date.now() - start;
             const status = res.statusCode;
+            const method = req.method;
+            const url = req.originalUrl;
             const color = status >= 400 ? 'red' : 'green';
 
-            console.log(chalk[color](`Route: ${req.method} ${req.originalUrl} | Status: ${status} | Duration: ${duration}ms`));
+            if (status >= 400) {
+                logger.error(chalk[color](`Route: ${method} ${url} | Status: ${status} | Duration: ${duration}ms`));
+            } else {
+                logger.info(chalk[color](`Route: ${method} ${url} | Status: ${status} | Duration: ${duration}ms`));
+            }
 
             originalEnd.apply(res, args);
         };
 
         res.json = function (body) {
             if (body && body.error) {
-                console.log(chalk.red(`Error on route ${req.method} ${req.originalUrl}: ${body.error}`));
+                logger.error((chalk.red`Error on route ${req.method} ${req.originalUrl}: ${body.error}`));
             }
             originalJson.apply(res, arguments);
         };
@@ -114,7 +121,7 @@ const Root = (app) => {
             const token = generateJWT(req.user);
             res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production',maxAge: 60 * 60* 24 * 1000, });
             res.cookie('refreshToken', req.user.refreshToken, { httpOnly: true, secure: process.env.NODE_ENV === 'production',maxAge: 60 * 60* 24 * 1000, });
-            console.log('Authentication successful');
+            logger.info('Authentication successful');
             const user = await User.findOne({ refreshToken: req.user.refreshToken });
             res.redirect(`http://localhost:5173/home/${user?.username}`);
 
@@ -143,9 +150,8 @@ const Root = (app) => {
 
     // Global Error Handler
     app.use((err, req, res, next) => {
-        console.error(err.stack);
+        logger.error(err.stack);
         res.status(500).json({ error: 'Internal Server Error' });
     });
-    app.use(globalErrorHandler)
 }
 export default Root;
