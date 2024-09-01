@@ -12,12 +12,17 @@ import { globalErrorHandler } from '../Utils/AppError.js';
 import chalk from 'chalk';
 import uploadRouter from '../Routes/Upload/cloudinaryUpload.routes.js';
 import logger from '../Utils/Logger.js';
+import { apiLimiter } from '../Utils/ApiLimiter.js';
+import helmet from 'helmet';
+
+
 
 const Root = (app) => {
     app.use(cors({ credentials: true, origin: process.env.CLIENT_URL }));
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
     app.use(cookieParser())
+    app.use(helmet());
 
     // Session configuration
     app.use(session({
@@ -111,7 +116,8 @@ const Root = (app) => {
 
         next();
     });
-
+    //apply rate limit to all route
+    app.use(apiLimiter)
     // GitHub authentication routes
     app.get('/auth/github', passport.authenticate('github', { scope: ['user:email'] }));
 
@@ -153,5 +159,6 @@ const Root = (app) => {
         logger.error(err.stack);
         res.status(500).json({ error: 'Internal Server Error' });
     });
+    app.use(globalErrorHandler);
 }
 export default Root;
