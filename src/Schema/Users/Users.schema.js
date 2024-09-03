@@ -15,7 +15,7 @@ type Project {
 }
 type User {
     id: ID!
-    username: String!
+    username: String
     email: String!
     profilePicture: String
     bio:String
@@ -39,7 +39,7 @@ type User {
   }
 
  extend type Mutation {
-    createUser(username: String!, email: String!, password: String!): User
+    createUser(username: String, email: String!, password: String!): User
     deleteUser(id: ID!): User
   }
 `;

@@ -6,7 +6,7 @@ type Question {
     title: String!
     content: String!
     tags: [String!]!
-    author: User!
+    author: User
     upvotes: [User!]!
     downvotes: [User!]!
     viwes: Int!
