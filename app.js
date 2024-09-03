@@ -6,6 +6,7 @@ import typeDefs from './src/Graphql/GraphQL.schema.js';
 import resolvers from './src/Graphql/GraphQL.resolver.js';
 import Root from './src/Middleware/Root.middlleware.js';
 import authMiddleware from './src/Middleware/Auth/Auth.middleware.js';
+import chalk from 'chalk';
 
 dotenv.config({ path: "./.env" });
 
