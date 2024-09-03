@@ -2,6 +2,7 @@ import { Router } from 'express';
 import passport from 'passport';
 import jwt from 'jsonwebtoken';
 import logger from '../../Utils/Logger.js';
+import authMiddleware from '../../Middleware/Auth/Auth.middleware.js';
 const localAuthRouter = Router();
 // Signup Route
 localAuthRouter.post('/signup', (req, res, next) => {
@@ -68,6 +69,13 @@ localAuthRouter.get('/logout', (req, res) => {
       res.clearCookie('rememberMe');
       res.status(200).json({ message: 'Logout successful.' });
   });
+});
+localAuthRouter.get('/check-auth', authMiddleware, (req, res) => {
+    if (req.isAuthenticated()) {
+        return res.status(200).json({ isAuthenticated: true });
+    } else {
+        return res.status(400).json({ isAuthenticated: false });
+    }
 });
 
 export default localAuthRouter;
