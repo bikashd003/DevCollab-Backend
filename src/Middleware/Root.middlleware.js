@@ -9,7 +9,7 @@ import uploadRouter from '../Routes/Upload/cloudinaryUpload.routes.js';
 import logger from '../Utils/Logger.js';
 import { apiLimiter } from '../Utils/ApiLimiter.js';
 import helmet from 'helmet';
-import setupLocalAuth, { checkRememberMeCookie } from '../Auth/LocalAuth.js';
+import setupLocalAuth from '../Auth/LocalAuth.js';
 import localAuthRouter from '../Routes/Auth/LocalAuth.routes.js';
 
 
@@ -68,7 +68,6 @@ const Root = (app) => {
 
     //Local auth routes
     app.use('/auth', localAuthRouter);
-    app.use(checkRememberMeCookie)
     // Logout route
     app.get('/logout', (req, res) => {
         req.logout((err) => {
