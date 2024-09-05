@@ -5,6 +5,7 @@ const blogTypeDefs = gql`
     id: ID!
     title: String!
     content: String!
+    tags: [String!]!
     author: User!
     comments: [Comment!]!
     likes: [User!]
@@ -26,8 +27,8 @@ const blogTypeDefs = gql`
   }
 
   extend type Mutation {
-    createBlog(title:String!, content: String!): Blog!
-    updateBlog(id: ID!,title:String!, content: String! ): Blog!
+    createBlog(title:String!, content: String!, tags: [String!]!): Blog!
+    updateBlog(id: ID!,title:String!, content: String!, tags: [String!]! ): Blog!
     deleteBlog(id: ID!): Boolean!
     likeBlog(blogId: ID!,userId: ID): Blog!
   }

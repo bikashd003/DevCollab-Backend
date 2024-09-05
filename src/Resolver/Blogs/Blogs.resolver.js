@@ -25,12 +25,14 @@ export const blogResolvers = {
     Mutation: {
         // Create a new blog
         createBlog: async (_, args) => {
-            const { title, content } = args;
+            const { title, content, tags } = args;
+            console.log(args);
             try {
                 const newBlog = new Blog({
                     title,
                     content,
                     author: "66b7b5c58020ef32626cbbfd",
+                    tags
                 });
                 await newBlog.save();
                 return newBlog;
