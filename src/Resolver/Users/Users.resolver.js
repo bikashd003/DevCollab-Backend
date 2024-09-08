@@ -12,11 +12,11 @@ const usersResolvers = {
       if (!context.user) {
         throw new AuthenticationError('You must be logged in');
       }
-      const userQuery = User.findById(context.user.id)
+      const user = await User.findById(context.user._id)
         .populate('projects')
         .populate('skills')
         .lean();
-      const user = await userQuery;
+
       return user;
     }
   },
