@@ -5,7 +5,7 @@ export const blogResolvers = {
         // Fetch all blogs
         getBlogs: async () => {
             try {
-                return await Blog.find().populate('author').populate('comments.author').populate('likes');
+                return await Blog.find().populate('author').populate('comments.author').populate('likes').sort({ createdAt: -1 });
             } catch (error) {
                 console.log(error);
                 throw new Error('Error fetching blogs');
