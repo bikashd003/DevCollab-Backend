@@ -1,6 +1,13 @@
 import { gql } from 'apollo-server-express';
 
 const blogTypeDefs = gql`
+type Comment {
+  id: ID!
+  content: String!
+  author: User!
+  createdAt: String!
+  updatedAt: String!
+}
   type Blog {
     id: ID!
     title: String!
@@ -8,15 +15,7 @@ const blogTypeDefs = gql`
     tags: [String!]!
     author: User!
     comments: [Comment!]!
-    likes: [User!]
-    createdAt: String!
-    updatedAt: String!
-  }
-
-  type Comment {
-    id: ID!
-    content: String!
-    author: User!
+    likes: [User!]!
     createdAt: String!
     updatedAt: String!
   }
@@ -27,10 +26,10 @@ const blogTypeDefs = gql`
   }
 
   extend type Mutation {
-    createBlog(title:String!, content: String!, tags: [String!]!): Blog!
-    updateBlog(id: ID!,title:String!, content: String!, tags: [String!]! ): Blog!
+    createBlog(title: String!, content: String!, tags: [String!]!): Blog!
+    updateBlog(id: ID!, title: String!, content: String!, tags: [String!]!): Blog!
     deleteBlog(id: ID!): Boolean!
-    likeBlog(blogId: ID!,userId: ID): Blog!
+    likeBlog(id: ID!): Blog!
   }
 `;
 

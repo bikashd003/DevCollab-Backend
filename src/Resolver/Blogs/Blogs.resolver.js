@@ -24,14 +24,13 @@ export const blogResolvers = {
 
     Mutation: {
         // Create a new blog
-        createBlog: async (_, args) => {
+        createBlog: async (_, args, context) => {
             const { title, content, tags } = args;
-            console.log(args);
             try {
                 const newBlog = new Blog({
                     title,
                     content,
-                    author: "66b7b5c58020ef32626cbbfd",
+                    author: context?.user?._id,
                     tags
                 });
                 await newBlog.save();
@@ -67,14 +66,15 @@ export const blogResolvers = {
             }
         },
         //like blog
-        likeBlog: async (_, { blogId, userId }) => {
+        likeBlog: async (_, { id }, context) => {
             try {
-                const blog = await Blog.findById(blogId);
+                const userId = context.user._id;
+                const blog = await Blog.findById(id);
                 if (!blog) {
                     throw new Error('Blog not found');
                 }
                 if (blog.likes.includes(userId)) {
-                    blog.likes = blog.likes.filter(id => id !== userId);
+                    blog.likes.pull(userId);
                 } else {
                     blog.likes.push(userId);
                 }
