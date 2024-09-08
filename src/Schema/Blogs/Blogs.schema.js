@@ -23,6 +23,7 @@ type Comment {
   extend type Query {
     getBlogs: [Blog!]!
     getBlogById(id: ID!): Blog
+    topContributors: [User!]!
   }
 
   extend type Mutation {

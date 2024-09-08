@@ -19,6 +19,37 @@ export const blogResolvers = {
             } catch (error) {
                 throw new Error('Blog not found');
             }
+        },
+        topContributors: async () => {
+            try {
+                const topContributors = await Blog.aggregate([
+                    { $group: { _id: '$author', count: { $sum: 1 } } }, // Group by author
+                    {
+                        $lookup: {
+                            from: 'users',
+                            localField: '_id',
+                            foreignField: '_id',
+                            as: 'userDetails'
+                        }
+                    },
+                    { $unwind: '$userDetails' },
+                    {
+                        $project: {
+                            _id: 1,
+                            count: 1,
+                            username: '$userDetails.username',
+                            profilePicture: '$userDetails.profilePicture'
+                        }
+                    },
+                    { $sort: { count: -1 } },
+                    { $limit: 5 }
+                ]);
+                console.log('topContributors', topContributors);
+                return topContributors;
+            } catch (error) {
+                console.error('Error fetching top contributors:', error); // Log the error
+                throw new Error('Error fetching top contributors');
+            }
         }
     },
 
