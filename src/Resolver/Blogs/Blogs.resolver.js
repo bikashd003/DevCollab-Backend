@@ -44,13 +44,29 @@ export const blogResolvers = {
                     { $sort: { count: -1 } },
                     { $limit: 5 }
                 ]);
-                console.log('topContributors', topContributors);
                 return topContributors;
             } catch (error) {
-                console.error('Error fetching top contributors:', error); // Log the error
                 throw new Error('Error fetching top contributors');
             }
+        },
+        getPopularTags: async () => {
+            try {
+                const popularTags = await Blog.aggregate([
+                    { $unwind: '$tags' },
+                    { $group: { _id: '$tags', count: { $sum: 1 } } },
+                    { $sort: { count: -1 } },
+                    { $limit: 5 }
+                ]);
+                // Map the result to return the tag and count in the correct format
+                return popularTags.map(tag => ({
+                    tag: tag._id,
+                    count: tag.count
+                }));
+            } catch (error) {
+                throw new Error('Error fetching popular tags');
+            }
         }
+
     },
 
     Mutation: {

@@ -19,6 +19,14 @@ type Comment {
     createdAt: String!
     updatedAt: String!
   }
+type PopularTag {
+  tag: String!
+  count: Int!
+}
+
+extend type Query {
+  getPopularTags: [PopularTag!]!
+}
 
   extend type Query {
     getBlogs: [Blog!]!
