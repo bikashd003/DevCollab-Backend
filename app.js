@@ -7,11 +7,24 @@ import resolvers from './src/Graphql/GraphQL.resolver.js';
 import Root from './src/Middleware/Root.middlleware.js';
 import authMiddleware from './src/Middleware/Auth/Auth.middleware.js';
 import chalk from 'chalk';
-
+import Socket from './src/Server/Socket.js';
+import http from 'http';
 dotenv.config({ path: "./.env" });
 
 const app = express();
+const server = http.createServer(app);
+const io = Socket(server);
+io.on('connection', (socket) => {
+  console.log('a user connected');
 
+  socket.on('codeChange', (code) => {
+    socket.broadcast.emit('codeChange', code);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('user disconnected');
+  });
+});
 // Apply Root middleware
 Root(app);
 
