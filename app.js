@@ -7,13 +7,17 @@ import resolvers from './src/Graphql/GraphQL.resolver.js';
 import Root from './src/Middleware/Root.middlleware.js';
 import authMiddleware from './src/Middleware/Auth/Auth.middleware.js';
 import chalk from 'chalk';
-import Socket from './src/Server/Socket.js';
+import { Server } from "socket.io";
 import http from 'http';
+
 dotenv.config({ path: "./.env" });
 
 const app = express();
-const server = http.createServer(app);
-const io = Socket(server);
+const httpServer = http.createServer(app);
+
+// Socket.IO setup
+const io = new Server(httpServer);
+
 io.on('connection', (socket) => {
   console.log('a user connected');
 
@@ -25,6 +29,7 @@ io.on('connection', (socket) => {
     console.log('user disconnected');
   });
 });
+
 // Apply Root middleware
 Root(app);
 
@@ -63,9 +68,10 @@ const startServer = async () => {
     });
 
     // Start the server
-    app.listen(process.env.PORT, () => {
-      console.log(`Server is running on port ${process.env.PORT}`);
-      console.log(`GraphQL Playground available at http://localhost:${process.env.PORT}${server.graphqlPath}`);
+    const PORT = process.env.PORT || 5000;
+    httpServer.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+      console.log(`GraphQL Playground available at http://localhost:${PORT}${server.graphqlPath}`);
     });
   } catch (err) {
     console.error('Error starting server:', err);
