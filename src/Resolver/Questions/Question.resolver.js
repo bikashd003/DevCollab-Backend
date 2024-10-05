@@ -14,8 +14,8 @@ const questionResolvers = {
 
             return { questions, totalQuestions, totalPages };
         },
-        getQuestion: async (parent, args) => {
-            return await Question.findById(args.id)
+        getQuestionById: async (parent, args) => {
+            return await Question.findById(args.id).populate('author');
         },
         searchQuestions: async (_, args, context) => {
             const { searchTerm, limit, offset, tags, userId } = args;
@@ -50,8 +50,13 @@ const questionResolvers = {
 
     },
     Mutation: {
-        createQuestion: async (parent, args) => {
-            const newQuestion = new Question(args);
+        createQuestion: async (parent, args, context) => {
+            const newQuestion = new Question({
+                title: args.title,
+                content: args.content,
+                author: context.user._id,
+                tags: args.tags
+            });
             return await newQuestion.save();
         },
         updateQuestion: async (parent, args) => {
