@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 
 const AnswerSchema = new Schema({
-    body: {
+    content: {
         type: String,
         required: true
     },

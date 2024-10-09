@@ -1,4 +1,5 @@
 import { Question } from "../../Models/Questions/Question.model.js";
+import { Answer } from "../../Models/Questions/Answer.model.js";
 import { User } from "../../Models/Users/Users.model.js"
 const questionResolvers = {
     Query: {
@@ -15,7 +16,7 @@ const questionResolvers = {
             return { questions, totalQuestions, totalPages };
         },
         getQuestionById: async (parent, args) => {
-            return await Question.findById(args.id).populate('author');
+            return await Question.findById(args.id).populate('author answers');
         },
         searchQuestions: async (_, args, context) => {
             const { searchTerm, limit, offset, tags, userId } = args;
@@ -75,6 +76,36 @@ const questionResolvers = {
             const question = await Question.findById(args.id);
             question.downvotes -= 1;
             return await question.save();
+        },
+        createAnswer: async (parent, args) => {
+            const newAnswer = new Answer({
+                content: args.content,
+                author: context.user._id,
+                question: args.questionId
+            });
+            return await newAnswer.save();
+        },
+        updateAnswer: async (parent, args) => {
+            return await Answer.findByIdAndUpdate(args.id, args, { new: true });
+        },
+        deleteAnswer: async (parent, args) => {
+            await Answer.findByIdAndDelete(args.id);
+            return true;
+        },
+        upvoteAnswer: async (parent, args) => {
+            const answer = await Answer.findById(args.id);
+            answer.upvotes += 1;
+            return await answer.save();
+        },
+        downvoteAnswer: async (parent, args) => {
+            const answer = await Answer.findById(args.id);
+            answer.downvotes -= 1;
+            return await answer.save();
+        },
+        acceptAnswer: async (parent, args) => {
+            const answer = await Answer.findById(args.id);
+            answer.isAccepted = true;
+            return await answer.save();
         },
     },
 };
