@@ -7,10 +7,15 @@ type Answer {
     author: User
     createdAt: String!
     updatedAt: String!
-    question: Question!
+    questionId: ID!
     upvotes: [User!]!
     downvotes: [User!]!
     isAccepted: Boolean!
+}
+type User {
+    id: ID!
+    username: String!
+    profilePicture: String!
 }
 type Question {
     id: ID!
@@ -20,10 +25,10 @@ type Question {
     author: User
     upvotes: [User!]!
     downvotes: [User!]!
-    viwes: Int!
-    createdAt: String!
-    updatedAt: String!
-    answers: [Answer!]!
+    views: Int
+    createdAt: String
+    updatedAt: String
+    answers: [Answer]
   }
 extend type Query {
   getQuestions(limit: Int!, offset: Int!): QuestionsResponse!

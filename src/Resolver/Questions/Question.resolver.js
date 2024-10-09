@@ -15,8 +15,20 @@ const questionResolvers = {
 
             return { questions, totalQuestions, totalPages };
         },
-        getQuestionById: async (parent, args) => {
-            return await Question.findById(args.id).populate('author answers');
+        getQuestionById: async (parent, args, context) => {
+            const question = await Question.findById(args.id)
+                .populate({
+                    path: 'answers',
+                    populate: {
+                        path: 'author'
+                    }
+                })
+                .populate('author')
+                .populate('upvotes')
+                .populate('downvotes');
+            question.views += 1;
+            await question.save();
+            return question;
         },
         searchQuestions: async (_, args, context) => {
             const { searchTerm, limit, offset, tags, userId } = args;
@@ -67,23 +79,40 @@ const questionResolvers = {
             await Question.findByIdAndDelete(args.id);
             return true;
         },
-        upvoteQuestion: async (parent, args) => {
+        upvoteQuestion: async (parent, args, context) => {
             const question = await Question.findById(args.id);
-            question.upvotes += 1;
+            const userId = context.user._id;
+
+            if (question.upvotes.includes(userId)) {
+                // Remove user ID from upvotes
+                question.upvotes.pull(userId);
+            } else {
+                // Add user ID to upvotes if not present
+                question.upvotes.push(userId);
+            }
             return await question.save();
         },
-        downvoteQuestion: async (parent, args) => {
+        downvoteQuestion: async (parent, args, context) => {
             const question = await Question.findById(args.id);
-            question.downvotes -= 1;
+            const userId = context.user._id;
+            if (question.downvotes.includes(userId)) {
+                question.downvotes.pull(userId);
+            } else {
+                question.downvotes.push(userId);
+            }
             return await question.save();
         },
-        createAnswer: async (parent, args) => {
+        createAnswer: async (parent, args, context) => {
             const newAnswer = new Answer({
                 content: args.content,
                 author: context.user._id,
-                question: args.questionId
+                questionId: args.questionId
             });
-            return await newAnswer.save();
+            await newAnswer.save();
+            const question = await Question.findById(args.questionId);
+            question.answers.push(newAnswer._id);
+            await question.save();
+            return newAnswer;
         },
         updateAnswer: async (parent, args) => {
             return await Answer.findByIdAndUpdate(args.id, args, { new: true });
@@ -92,20 +121,34 @@ const questionResolvers = {
             await Answer.findByIdAndDelete(args.id);
             return true;
         },
-        upvoteAnswer: async (parent, args) => {
+        upvoteAnswer: async (parent, args, context) => {
             const answer = await Answer.findById(args.id);
-            answer.upvotes += 1;
+            const userId = context.user._id;
+            if (answer.upvotes.includes(userId)) {
+                answer.upvotes.pull(userId);
+            } else {
+                answer.upvotes.push(userId);
+            }
             return await answer.save();
         },
-        downvoteAnswer: async (parent, args) => {
+        downvoteAnswer: async (parent, args, context) => {
             const answer = await Answer.findById(args.id);
-            answer.downvotes -= 1;
+            const userId = context.user._id;
+            if (answer.downvotes.includes(userId)) {
+                answer.downvotes.pull(userId);
+            } else {
+                answer.downvotes.push(userId);
+            }
             return await answer.save();
         },
-        acceptAnswer: async (parent, args) => {
+        acceptAnswer: async (parent, args, context) => {
             const answer = await Answer.findById(args.id);
-            answer.isAccepted = true;
-            return await answer.save();
+            const userId = context.user._id;
+            if (answer.author.toString() === userId.toString()) {
+                answer.isAccepted = true;
+                return await answer.save();
+            }
+            return null;
         },
     },
 };
