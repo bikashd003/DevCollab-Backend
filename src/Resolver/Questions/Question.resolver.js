@@ -1,6 +1,7 @@
 import { Question } from "../../Models/Questions/Question.model.js";
 import { Answer } from "../../Models/Questions/Answer.model.js";
 import { User } from "../../Models/Users/Users.model.js"
+import { checkForAbusiveLanguage } from "../../Constant/CheckForAbusiveLanguage.js";
 const questionResolvers = {
     Query: {
         getQuestions: async (_, { limit, offset }) => {
@@ -64,6 +65,15 @@ const questionResolvers = {
     },
     Mutation: {
         createQuestion: async (parent, args, context) => {
+            //check if the user is authenticated
+            if (!context.user) {
+                throw new Error('User is not authenticated');
+            }
+            //check content has abousive language
+            const hasAbusiveLanguage = await checkForAbusiveLanguage(args.content);
+            if (hasAbusiveLanguage) {
+                throw new Error('Content has abusive language please be polite and respectful');
+            }
             const newQuestion = new Question({
                 title: args.title,
                 content: args.content,
@@ -72,14 +82,26 @@ const questionResolvers = {
             });
             return await newQuestion.save();
         },
-        updateQuestion: async (parent, args) => {
+        updateQuestion: async (parent, args, context) => {
+            //check if the user is authenticated
+            if (!context.user) {
+                throw new Error('User is not authenticated');
+            }
             return await Question.findByIdAndUpdate(args.id, args, { new: true });
         },
-        deleteQuestion: async (parent, args) => {
+        deleteQuestion: async (parent, args, context) => {
+            //check if the user is authenticated
+            if (!context.user) {
+                throw new Error('User is not authenticated');
+            }
             await Question.findByIdAndDelete(args.id);
             return true;
         },
         upvoteQuestion: async (parent, args, context) => {
+            //check if the user is authenticated
+            if (!context.user) {
+                throw new Error('User is not authenticated');
+            }
             const question = await Question.findById(args.id);
             const userId = context.user._id;
 
@@ -93,6 +115,10 @@ const questionResolvers = {
             return await question.save();
         },
         downvoteQuestion: async (parent, args, context) => {
+            //check if the user is authenticated
+            if (!context.user) {
+                throw new Error('User is not authenticated');
+            }
             const question = await Question.findById(args.id);
             const userId = context.user._id;
             if (question.downvotes.includes(userId)) {
@@ -103,6 +129,15 @@ const questionResolvers = {
             return await question.save();
         },
         createAnswer: async (parent, args, context) => {
+            //check if the user is authenticated
+            if (!context.user) {
+                throw new Error('User is not authenticated');
+            }
+            //check content has abousive language
+            const hasAbusiveLanguage = await checkForAbusiveLanguage(args.content);
+            if (hasAbusiveLanguage) {
+                throw new Error('Content has abusive language please be polite and respectful');
+            }
             const newAnswer = new Answer({
                 content: args.content,
                 author: context.user._id,
@@ -114,14 +149,31 @@ const questionResolvers = {
             await question.save();
             return newAnswer;
         },
-        updateAnswer: async (parent, args) => {
+        updateAnswer: async (parent, args, context) => {
+            //check if the user is authenticated
+            if (!context.user) {
+                throw new Error('User is not authenticated');
+            }
+            //check content has abousive language
+            const hasAbusiveLanguage = await checkForAbusiveLanguage(args.content);
+            if (hasAbusiveLanguage) {
+                throw new Error('Content has abusive language please be polite and respectful');
+            }
             return await Answer.findByIdAndUpdate(args.id, args, { new: true });
         },
-        deleteAnswer: async (parent, args) => {
+        deleteAnswer: async (parent, args, context) => {
+            //check if the user is authenticated
+            if (!context.user) {
+                throw new Error('User is not authenticated');
+            }
             await Answer.findByIdAndDelete(args.id);
             return true;
         },
         upvoteAnswer: async (parent, args, context) => {
+            //check if the user is authenticated
+            if (!context.user) {
+                throw new Error('User is not authenticated');
+            }
             const answer = await Answer.findById(args.id);
             const userId = context.user._id;
             if (answer.upvotes.includes(userId)) {
@@ -132,6 +184,10 @@ const questionResolvers = {
             return await answer.save();
         },
         downvoteAnswer: async (parent, args, context) => {
+            //check if the user is authenticated
+            if (!context.user) {
+                throw new Error('User is not authenticated');
+            }
             const answer = await Answer.findById(args.id);
             const userId = context.user._id;
             if (answer.downvotes.includes(userId)) {
@@ -142,6 +198,10 @@ const questionResolvers = {
             return await answer.save();
         },
         acceptAnswer: async (parent, args, context) => {
+            //check if the user is authenticated
+            if (!context.user) {
+                throw new Error('User is not authenticated');
+            }
             const answer = await Answer.findById(args.id);
             const userId = context.user._id;
             if (answer.author.toString() === userId.toString()) {
