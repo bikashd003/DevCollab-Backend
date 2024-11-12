@@ -41,6 +41,13 @@ const usersResolvers = {
       const deletedUser = await User.findByIdAndRemove(args.id);
       return deletedUser;
     },
+    updateUserProfilePicture: async (parent, args, context) => {
+      if (!context.user) {
+        throw new AuthenticationError('You must be logged in');
+      }
+      const updatedUser = await User.findByIdAndUpdate(context.user._id, { profilePicture: args.profilePicture }, { new: true });
+      return updatedUser;
+    },
   },
 };
 
