@@ -10,6 +10,7 @@ import chalk from 'chalk';
 import { Server } from "socket.io";
 import http from 'http';
 import Editor from './src/Models/Editor/Editor.model.js';
+import { User } from './src/Models/Users/Users.model.js';
 
 dotenv.config({ path: "./.env" });
 
@@ -28,11 +29,25 @@ io.on('connection', (socket) => {
   console.log('A user connected:', socket.id);
 
   // Join a project room
-  socket.on('joinProject', (projectId) => {
+  socket.on('joinProject', async ({ projectId, userId }) => {
     socket.join(projectId);
-    const users = Array.from(io.sockets.adapter.rooms.get(projectId) || [])
-    io.to(projectId).emit('connectedUsers', users)
-    console.log(`User joined project: ${projectId}`);
+    const user = await User.findById(userId);
+    socket.data.username = user.username;
+    socket.data.profilePicture = user.profilePicture;
+
+    // Get all socket IDs in this room
+    const socketIds = Array.from(io.sockets.adapter.rooms.get(projectId) || []);
+
+    // Get user details for each connected socket
+    const connectedUsers = await Promise.all(
+      socketIds.map(async (socketId) => {
+        const socket = io.sockets.sockets.get(socketId);
+        return { username: socket.data.username, profilePicture: socket.data.profilePicture };
+      })
+    );
+
+    io.to(projectId).emit('connectedUsers', connectedUsers);
+    console.log(`User ${socket.data.username} joined project: ${projectId}`);
   });
 
   // Handle code updates
@@ -41,10 +56,9 @@ io.on('connection', (socket) => {
   });
 
   // Handle chat messages
-  socket.on('chatMessage', ({ projectId, id, user, text }) => {
+  socket.on('chatMessage', ({ projectId, user, text }) => {
     io.to(projectId).emit('chatMessage', { id, user, text });
 
-    // Save the chat message to the database (optional)
     Editor.findOneAndUpdate(
       { _id: projectId },
       { $push: { chatHistory: { username: user, message: text, timestamp: new Date() } } },
