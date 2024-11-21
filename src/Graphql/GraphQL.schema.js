@@ -7,6 +7,7 @@ import { contactTypeDefs } from '../Schema/Users/Contact.schema.js';
 import { activityTypeDefs } from "../Schema/Users/Activities.schema.js"
 import { questionTypeDefs } from '../Schema/Questions/Question.schema.js';
 import { blogTypeDefs } from '../Schema/Blogs/Blogs.schema.js';
+import { editorTypeDefs } from '../Schema/Editor/Editor.schema.js';
 
 const rootTypeDefs = gql`
   type Query
@@ -22,7 +23,8 @@ const typeDefs = [
   activityTypeDefs,
   projectTypeDefs,
   questionTypeDefs,
-  blogTypeDefs
+  blogTypeDefs,
+  editorTypeDefs
 ];
 
 export default typeDefs;

@@ -6,6 +6,8 @@ import { contactResolvers } from '../Resolver/Users/Contact.resolver.js';
 import { activityResolvers } from '../Resolver/Users/Activities.resolver.js';
 import { questionResolvers } from '../Resolver/Questions/Question.resolver.js';
 import { blogResolvers } from '../Resolver/Blogs/Blogs.resolver.js';
+import { editorResolvers } from '../Resolver/Editor/Editor.resolver.js';
+
 const resolvers = {
   Query: {
     ...usersResolvers.Query,
@@ -16,6 +18,7 @@ const resolvers = {
     ...projectResolvers.Query,
     ...questionResolvers.Query,
     ...blogResolvers.Query,
+    ...editorResolvers.Query,
   },
   Mutation: {
     ...usersResolvers.Mutation,
@@ -26,6 +29,7 @@ const resolvers = {
     ...projectResolvers.Mutation,
     ...questionResolvers.Mutation,
     ...blogResolvers.Mutation,
+    ...editorResolvers.Mutation,
   },
 };
 

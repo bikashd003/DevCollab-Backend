@@ -9,6 +9,7 @@ import authMiddleware from './src/Middleware/Auth/Auth.middleware.js';
 import chalk from 'chalk';
 import { Server } from "socket.io";
 import http from 'http';
+import Editor from './src/Models/Editor/Editor.model.js';
 
 dotenv.config({ path: "./.env" });
 
@@ -16,19 +17,52 @@ const app = express();
 const httpServer = http.createServer(app);
 
 // Socket.IO setup
-const io = new Server(httpServer);
+const io = new Server(httpServer, {
+  cors: {
+    origin: process.env.CLIENT_URL,
+    credentials: true
+  }
+});
 
 io.on('connection', (socket) => {
-  console.log('a user connected');
+  console.log('A user connected:', socket.id);
 
-  socket.on('codeChange', (code) => {
-    socket.broadcast.emit('codeChange', code);
+  // Join a project room
+  socket.on('joinProject', (projectId) => {
+    socket.join(projectId);
+    const users = Array.from(io.sockets.adapter.rooms.get(projectId) || [])
+    io.to(projectId).emit('connectedUsers', users)
+    console.log(`User joined project: ${projectId}`);
   });
 
+  // Handle code updates
+  socket.on('codeUpdate', ({ projectId, code }) => {
+    socket.to(projectId).emit('codeUpdate', code);
+  });
+
+  // Handle chat messages
+  socket.on('chatMessage', ({ projectId, id, user, text }) => {
+    io.to(projectId).emit('chatMessage', { id, user, text });
+
+    // Save the chat message to the database (optional)
+    Editor.findOneAndUpdate(
+      { _id: projectId },
+      { $push: { chatHistory: { username: user, message: text, timestamp: new Date() } } },
+      { new: true }
+    ).catch((err) => console.error('Error saving chat message:', err));
+  });
+
+  // Handle disconnection
   socket.on('disconnect', () => {
-    console.log('user disconnected');
+    console.log('A user disconnected:', socket.id);
+    const rooms = Array.from(socket.rooms);
+    rooms.forEach(room => {
+      const users = Array.from(io.sockets.adapter.rooms.get(room) || []);
+      io.to(room).emit('connectedUsers', users);
+    });
   });
 });
+
 
 // Apply Root middleware
 Root(app);
