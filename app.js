@@ -24,7 +24,19 @@ const io = new Server(httpServer, {
     credentials: true
   }
 });
-
+async function getConnectedUsers(roomId) {
+  const socketIds = Array.from(io.sockets.adapter.rooms.get(roomId) || []);
+  const users = await Promise.all(
+    socketIds.map(async (socketId) => {
+      const socket = io.sockets.sockets.get(socketId);
+      return {
+        username: socket.data.username,
+        profilePicture: socket.data.profilePicture
+      };
+    })
+  );
+  return users;
+}
 io.on('connection', (socket) => {
   console.log('A user connected:', socket.id);
 
@@ -35,20 +47,19 @@ io.on('connection', (socket) => {
     socket.data.username = user.username;
     socket.data.profilePicture = user.profilePicture;
 
-    // Get all socket IDs in this room
-    const socketIds = Array.from(io.sockets.adapter.rooms.get(projectId) || []);
+    // Get chat history and emit only to the joining socket
+    const chatHistory = await Editor.findOne({ _id: projectId })
+      .populate('chatHistory.username', 'username')
+      .select('chatHistory -_id');
 
-    // Get user details for each connected socket
-    const connectedUsers = await Promise.all(
-      socketIds.map(async (socketId) => {
-        const socket = io.sockets.sockets.get(socketId);
-        return { username: socket.data.username, profilePicture: socket.data.profilePicture };
-      })
-    );
+    // Emit chat history only to the joining user
+    socket.emit('chatHistory', chatHistory);
 
+    // Get and emit connected users
+    const connectedUsers = await getConnectedUsers(projectId);
     io.to(projectId).emit('connectedUsers', connectedUsers);
-    console.log(`User ${socket.data.username} joined project: ${projectId}`);
   });
+
 
   // Handle code updates
   socket.on('codeUpdate', ({ projectId, code }) => {
@@ -56,24 +67,46 @@ io.on('connection', (socket) => {
   });
 
   // Handle chat messages
-  socket.on('chatMessage', ({ projectId, user, text }) => {
-    io.to(projectId).emit('chatMessage', { id, user, text });
+  socket.on('chatMessage', async ({ projectId, user, text }) => {
+    // Get user details
+    const userDetails = await User.findById(user).select('username');
 
+    // Emit message with proper structure
+    io.to(projectId).emit('chatMessage', {
+      username: userDetails,
+      message: text,
+      timestamp: new Date()
+    });
+
+    // Save to database
     Editor.findOneAndUpdate(
       { _id: projectId },
       { $push: { chatHistory: { username: user, message: text, timestamp: new Date() } } },
       { new: true }
     ).catch((err) => console.error('Error saving chat message:', err));
   });
+  socket.on('typing', ({ projectId }) => {
+    // Get username from socket or user data
+    const username = socket.data.username;
+    socket.to(projectId).emit('userTyping', username);
+  });
 
+  socket.on('stopTyping', ({ projectId }) => {
+    const username = socket.data.username;
+    socket.to(projectId).emit('userStoppedTyping', username);
+  });
   // Handle disconnection
-  socket.on('disconnect', () => {
+  socket.on('disconnect', async () => {
     console.log('A user disconnected:', socket.id);
+
+    // Get all rooms this socket was in
     const rooms = Array.from(socket.rooms);
-    rooms.forEach(room => {
-      const users = Array.from(io.sockets.adapter.rooms.get(room) || []);
-      io.to(room).emit('connectedUsers', users);
-    });
+
+    for (const room of rooms) {
+      // Get updated list of connected users for the room
+      const connectedUsers = await getConnectedUsers(room);
+      io.to(room).emit('connectedUsers', connectedUsers);
+    }
   });
 });
 
