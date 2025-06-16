@@ -5,6 +5,7 @@ type Comment {
   id: ID!
   content: String!
   author: User!
+  likes: [User!]!
   createdAt: String!
   updatedAt: String!
 }
@@ -39,6 +40,10 @@ extend type Query {
     updateBlog(id: ID!, title: String!, content: String!, tags: [String!]!): Blog!
     deleteBlog(id: ID!): Boolean!
     likeBlog(id: ID!): Blog!
+    createComment(content: String!, blogId: ID!): Comment!
+    updateComment(id: ID!, content: String!): Comment!
+    deleteComment(id: ID!): Boolean!
+    likeComment(id: ID!): Comment!
   }
 `;
 

@@ -7,6 +7,8 @@ const questionResolvers = {
         getQuestions: async (_, { limit, offset }) => {
             const questions = await Question.find()
                 .populate("author")
+                .populate("upvotes")
+                .populate("downvotes")
                 .skip(offset)
                 .limit(limit)
                 .exec();
@@ -51,7 +53,9 @@ const questionResolvers = {
             const questions = await Question.find(query)
                 .skip(offset)
                 .limit(limit)
-                .populate('author');
+                .populate('author')
+                .populate('upvotes')
+                .populate('downvotes');
             console.log(questions)
             const totalCount = await Question.countDocuments(query);
 
@@ -111,8 +115,16 @@ const questionResolvers = {
             } else {
                 // Add user ID to upvotes if not present
                 question.upvotes.push(userId);
+                // Remove from downvotes if present
+                question.downvotes.pull(userId);
             }
-            return await question.save();
+            await question.save();
+
+            // Return the populated question
+            return await Question.findById(args.id)
+                .populate('author')
+                .populate('upvotes')
+                .populate('downvotes');
         },
         downvoteQuestion: async (parent, args, context) => {
             //check if the user is authenticated
@@ -121,12 +133,21 @@ const questionResolvers = {
             }
             const question = await Question.findById(args.id);
             const userId = context.user._id;
+
             if (question.downvotes.includes(userId)) {
                 question.downvotes.pull(userId);
             } else {
                 question.downvotes.push(userId);
+                // Remove from upvotes if present
+                question.upvotes.pull(userId);
             }
-            return await question.save();
+            await question.save();
+
+            // Return the populated question
+            return await Question.findById(args.id)
+                .populate('author')
+                .populate('upvotes')
+                .populate('downvotes');
         },
         createAnswer: async (parent, args, context) => {
             //check if the user is authenticated

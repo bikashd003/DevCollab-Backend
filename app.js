@@ -44,8 +44,8 @@ io.on('connection', (socket) => {
   socket.on('joinProject', async ({ projectId, userId }) => {
     socket.join(projectId);
     const user = await User.findById(userId);
-    socket.data.username = user.username;
-    socket.data.profilePicture = user.profilePicture;
+    socket.data.username = user?.username;
+    socket.data.profilePicture = user?.profilePicture;
 
     // Get chat history and emit only to the joining socket
     const chatHistory = await Editor.findOne({ _id: projectId })
@@ -61,9 +61,22 @@ io.on('connection', (socket) => {
   });
 
 
-  // Handle code updates
-  socket.on('codeUpdate', ({ projectId, code }) => {
-    socket.to(projectId).emit('codeUpdate', code);
+  socket.on('codeChange', ({ projectId, userId, range, text }) => {
+    socket.to(projectId).emit('codeChange', { userId, range, text });
+  });
+
+  // Handle cursor position updates
+  socket.on('cursorPosition', ({ projectId, userId, position }) => {
+    socket.to(projectId).emit('cursorMoved', { userId, position });
+  });
+
+
+  // Handle initial code state
+  socket.on('requestInitialCode', async (projectId) => {
+    const project = await Editor.findById(projectId);
+    if (project) {
+      socket.emit('initialCode', project.code || '// Start coding here');
+    }
   });
 
   // Handle chat messages

@@ -5,7 +5,15 @@ export const blogResolvers = {
         // Fetch all blogs
         getBlogs: async () => {
             try {
-                return await Blog.find().populate('author').populate('comments.author').populate('likes').sort({ createdAt: -1 });
+                return await Blog.find()
+                    .populate('author')
+                    .populate('comments.author')
+                    .populate('likes')
+                    .populate({
+                        path: 'comments.likes',
+                        select: 'id username profilePicture'
+                    })
+                    .sort({ createdAt: -1 });
             } catch (error) {
                 console.log(error);
                 throw new Error('Error fetching blogs');
@@ -15,7 +23,14 @@ export const blogResolvers = {
         // Fetch a single blog by ID
         getBlogById: async (_, { id }) => {
             try {
-                return await Blog.findById(id).populate('author').populate('comments.author').populate('likes');
+                return await Blog.findById(id)
+                    .populate('author')
+                    .populate('comments.author')
+                    .populate('likes')
+                    .populate({
+                        path: 'comments.likes',
+                        select: 'id username profilePicture'
+                    });
             } catch (error) {
                 throw new Error('Blog not found');
             }
@@ -88,9 +103,19 @@ export const blogResolvers = {
         },
 
         // Update an existing blog
-        updateBlog: async (_, { id, args }) => {
+        updateBlog: async (_, { id, title, content, tags }) => {
             try {
-                const updatedBlog = await Blog.findByIdAndUpdate(id, args, { new: true })
+                const updatedBlog = await Blog.findByIdAndUpdate(
+                    id,
+                    { title, content, tags },
+                    { new: true }
+                ).populate('author')
+                .populate('comments.author')
+                .populate('likes')
+                .populate({
+                    path: 'comments.likes',
+                    select: 'id username profilePicture'
+                });
                 if (!updatedBlog) {
                     throw new Error('Blog not found');
                 }
@@ -129,6 +154,118 @@ export const blogResolvers = {
                 return blog;
             } catch (error) {
                 throw new Error('Error liking blog');
+            }
+        },
+
+        // Create comment
+        createComment: async (_, { content, blogId }, context) => {
+            try {
+                const userId = context.user._id;
+                const blog = await Blog.findById(blogId);
+                if (!blog) {
+                    throw new Error('Blog not found');
+                }
+
+                const newComment = {
+                    content,
+                    author: userId,
+                    likes: []
+                };
+
+                blog.comments.push(newComment);
+                await blog.save();
+
+                // Return the newly created comment
+                const savedBlog = await Blog.findById(blogId)
+                    .populate('comments.author')
+                    .populate({
+                        path: 'comments.likes',
+                        select: 'id username profilePicture'
+                    });
+                return savedBlog.comments[savedBlog.comments.length - 1];
+            } catch (error) {
+                throw new Error('Error creating comment');
+            }
+        },
+
+        // Update comment
+        updateComment: async (_, { id, content }, context) => {
+            try {
+                const userId = context.user._id;
+                const blog = await Blog.findOne({ 'comments._id': id });
+                if (!blog) {
+                    throw new Error('Comment not found');
+                }
+
+                const comment = blog.comments.id(id);
+                if (comment.author.toString() !== userId.toString()) {
+                    throw new Error('Not authorized to update this comment');
+                }
+
+                comment.content = content;
+                await blog.save();
+
+                const updatedBlog = await Blog.findById(blog._id)
+                    .populate('comments.author')
+                    .populate({
+                        path: 'comments.likes',
+                        select: 'id username profilePicture'
+                    });
+                return updatedBlog.comments.id(id);
+            } catch (error) {
+                throw new Error('Error updating comment');
+            }
+        },
+
+        // Delete comment
+        deleteComment: async (_, { id }, context) => {
+            try {
+                const userId = context.user._id;
+                const blog = await Blog.findOne({ 'comments._id': id });
+                if (!blog) {
+                    throw new Error('Comment not found');
+                }
+
+                const comment = blog.comments.id(id);
+                if (comment.author.toString() !== userId.toString()) {
+                    throw new Error('Not authorized to delete this comment');
+                }
+
+                blog.comments.pull(id);
+                await blog.save();
+                return true;
+            } catch (error) {
+                throw new Error('Error deleting comment');
+            }
+        },
+
+        // Like comment
+        likeComment: async (_, { id }, context) => {
+            try {
+                const userId = context.user._id;
+                const blog = await Blog.findOne({ 'comments._id': id });
+                if (!blog) {
+                    throw new Error('Comment not found');
+                }
+
+                const comment = blog.comments.id(id);
+                if (comment.likes.includes(userId)) {
+                    comment.likes.pull(userId);
+                } else {
+                    comment.likes.push(userId);
+                }
+
+                await blog.save();
+
+                const updatedBlog = await Blog.findById(blog._id)
+                    .populate('comments.author')
+                    .populate({
+                        path: 'comments.likes',
+                        select: 'id username profilePicture'
+                    });
+                return updatedBlog.comments.id(id);
+            } catch (error) {
+                throw new Error('Error liking comment');
             }
         }
     },
