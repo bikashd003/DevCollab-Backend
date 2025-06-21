@@ -64,16 +64,45 @@ const questionResolvers = {
                 totalPages: Math.ceil(totalCount / limit)
             };
         },
-
-
-    },
-    Mutation: {
-        createQuestion: async (parent, args, context) => {
-            //check if the user is authenticated
+        getUserBookmarks: async (_, { limit, offset }, context) => {
             if (!context.user) {
                 throw new Error('User is not authenticated');
             }
-            //check content has abousive language
+
+            const bookmarks = await Bookmark.find({ user: context.user._id })
+                .populate({
+                    path: 'question',
+                    populate: {
+                        path: 'author'
+                    }
+                })
+                .sort({ createdAt: -1 })
+                .skip(offset)
+                .limit(limit);
+
+            const totalBookmarks = await Bookmark.countDocuments({ user: context.user._id });
+            const totalPages = Math.ceil(totalBookmarks / limit);
+
+            return { bookmarks, totalBookmarks, totalPages };
+        },
+        isQuestionBookmarked: async (_, { questionId }, context) => {
+            if (!context.user) {
+                return false;
+            }
+
+            const bookmark = await Bookmark.findOne({
+                user: context.user._id,
+                question: questionId
+            });
+
+            return !!bookmark;
+        }
+    },
+    Mutation: {
+        createQuestion: async (parent, args, context) => {
+            if (!context.user) {
+                throw new Error('User is not authenticated');
+            }
             const hasAbusiveLanguage = await checkForAbusiveLanguage(args.content);
             if (hasAbusiveLanguage) {
                 throw new Error('Content has abusive language please be polite and respectful');
@@ -87,14 +116,12 @@ const questionResolvers = {
             return await newQuestion.save();
         },
         updateQuestion: async (parent, args, context) => {
-            //check if the user is authenticated
             if (!context.user) {
                 throw new Error('User is not authenticated');
             }
             return await Question.findByIdAndUpdate(args.id, args, { new: true });
         },
         deleteQuestion: async (parent, args, context) => {
-            //check if the user is authenticated
             if (!context.user) {
                 throw new Error('User is not authenticated');
             }
@@ -102,7 +129,6 @@ const questionResolvers = {
             return true;
         },
         upvoteQuestion: async (parent, args, context) => {
-            //check if the user is authenticated
             if (!context.user) {
                 throw new Error('User is not authenticated');
             }
@@ -127,7 +153,6 @@ const questionResolvers = {
                 .populate('downvotes');
         },
         downvoteQuestion: async (parent, args, context) => {
-            //check if the user is authenticated
             if (!context.user) {
                 throw new Error('User is not authenticated');
             }
@@ -150,11 +175,9 @@ const questionResolvers = {
                 .populate('downvotes');
         },
         createAnswer: async (parent, args, context) => {
-            //check if the user is authenticated
             if (!context.user) {
                 throw new Error('User is not authenticated');
             }
-            //check content has abousive language
             const hasAbusiveLanguage = await checkForAbusiveLanguage(args.content);
             if (hasAbusiveLanguage) {
                 throw new Error('Content has abusive language please be polite and respectful');
@@ -171,11 +194,9 @@ const questionResolvers = {
             return newAnswer;
         },
         updateAnswer: async (parent, args, context) => {
-            //check if the user is authenticated
             if (!context.user) {
                 throw new Error('User is not authenticated');
             }
-            //check content has abousive language
             const hasAbusiveLanguage = await checkForAbusiveLanguage(args.content);
             if (hasAbusiveLanguage) {
                 throw new Error('Content has abusive language please be polite and respectful');
@@ -183,7 +204,6 @@ const questionResolvers = {
             return await Answer.findByIdAndUpdate(args.id, args, { new: true });
         },
         deleteAnswer: async (parent, args, context) => {
-            //check if the user is authenticated
             if (!context.user) {
                 throw new Error('User is not authenticated');
             }
@@ -191,7 +211,6 @@ const questionResolvers = {
             return true;
         },
         upvoteAnswer: async (parent, args, context) => {
-            //check if the user is authenticated
             if (!context.user) {
                 throw new Error('User is not authenticated');
             }
@@ -205,7 +224,6 @@ const questionResolvers = {
             return await answer.save();
         },
         downvoteAnswer: async (parent, args, context) => {
-            //check if the user is authenticated
             if (!context.user) {
                 throw new Error('User is not authenticated');
             }
@@ -219,7 +237,6 @@ const questionResolvers = {
             return await answer.save();
         },
         acceptAnswer: async (parent, args, context) => {
-            //check if the user is authenticated
             if (!context.user) {
                 throw new Error('User is not authenticated');
             }
@@ -230,6 +247,41 @@ const questionResolvers = {
                 return await answer.save();
             }
             return null;
+        },
+        bookmarkQuestion: async (parent, { questionId }, context) => {
+            if (!context.user) {
+                throw new Error('User is not authenticated');
+            }
+
+            const existingBookmark = await Bookmark.findOne({
+                user: context.user._id,
+                question: questionId
+            });
+
+            if (existingBookmark) {
+                throw new Error('Question is already bookmarked');
+            }
+
+            const bookmark = await Bookmark.create({
+                user: context.user._id,
+                question: questionId
+            });
+
+            return await Bookmark.findById(bookmark._id)
+                .populate('user')
+                .populate('question');
+        },
+        removeBookmark: async (parent, { questionId }, context) => {
+            if (!context.user) {
+                throw new Error('User is not authenticated');
+            }
+
+            const result = await Bookmark.deleteOne({
+                user: context.user._id,
+                question: questionId
+            });
+
+            return result.deletedCount > 0;
         },
     },
 };

@@ -29,16 +29,33 @@ type Question {
     createdAt: String
     updatedAt: String
     answers: [Answer]
+    isBookmarked: Boolean
   }
+
+type Bookmark {
+    id: ID!
+    user: User!
+    question: Question!
+    createdAt: String!
+}
+
 extend type Query {
   getQuestions(limit: Int!, offset: Int!): QuestionsResponse!
   getQuestionById(id: ID!): Question!
   searchQuestions(searchTerm: String, limit: Int!, offset: Int!,tags: [String], userId: ID): QuestionsResponse!
+  getUserBookmarks(limit: Int!, offset: Int!): BookmarksResponse!
+  isQuestionBookmarked(questionId: ID!): Boolean!
 }
 
 type QuestionsResponse {
   questions: [Question!]!
   totalQuestions: Int!
+  totalPages: Int!
+}
+
+type BookmarksResponse {
+  bookmarks: [Bookmark!]!
+  totalBookmarks: Int!
   totalPages: Int!
 }
 extend type Mutation {
@@ -53,6 +70,8 @@ extend type Mutation {
     upvoteAnswer(id: ID!): Answer!
     downvoteAnswer(id: ID!): Answer!
     acceptAnswer(id: ID!): Answer!
+    bookmarkQuestion(questionId: ID!): Bookmark!
+    removeBookmark(questionId: ID!): Boolean!
     }
 `;
 export { questionTypeDefs };
