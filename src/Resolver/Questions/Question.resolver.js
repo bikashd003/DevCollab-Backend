@@ -2,6 +2,7 @@ import { Question } from "../../Models/Questions/Question.model.js";
 import { Answer } from "../../Models/Questions/Answer.model.js";
 import { User } from "../../Models/Users/Users.model.js"
 import { checkForAbusiveLanguage } from "../../Constant/CheckForAbusiveLanguage.js";
+import { Bookmark } from "../../Models/Users/Bookmark.model.js";
 const questionResolvers = {
     Query: {
         getQuestions: async (_, { limit, offset }) => {
@@ -89,11 +90,12 @@ const questionResolvers = {
             if (!context.user) {
                 return false;
             }
+            console.log(questionId)
 
             const bookmark = await Bookmark.findOne({
                 user: context.user._id,
                 question: questionId
-            });
+            }).populate('question');
 
             return !!bookmark;
         }
