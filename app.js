@@ -11,11 +11,16 @@ import { Server } from "socket.io";
 import http from 'http';
 import Editor from './src/Models/Editor/Editor.model.js';
 import { User } from './src/Models/Users/Users.model.js';
+import codeExecutionRouter from './src/Routes/CodeExecution.route.js';
 
 dotenv.config({ path: "./.env" });
 
 const app = express();
 const httpServer = http.createServer(app);
+
+// Basic middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Socket.IO setup
 const io = new Server(httpServer, {
@@ -133,6 +138,9 @@ const startServer = async () => {
     // Connect to MongoDB
     await connectDb();
 
+    // Apply REST API routes before Apollo
+    app.use('/api', codeExecutionRouter);
+
     // Apollo Server setup
     const server = new ApolloServer({
       typeDefs,
@@ -158,7 +166,13 @@ const startServer = async () => {
       cors: {
         origin: process.env.CLIENT_URL,
         credentials: true,
-      }
+      },
+      path: '/graphql' // Explicitly set the path
+    });
+
+    // Error handling for undefined routes - must be after all other routes
+    app.use((req, res, next) => {
+      res.status(404).json({ error: 'Not Found' });
     });
 
     // Start the server
