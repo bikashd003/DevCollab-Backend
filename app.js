@@ -35,6 +35,7 @@ async function getConnectedUsers(roomId) {
     socketIds.map(async (socketId) => {
       const socket = io.sockets.sockets.get(socketId);
       return {
+        id: socket.data.userId,
         username: socket.data.username,
         profilePicture: socket.data.profilePicture
       };
@@ -49,6 +50,7 @@ io.on('connection', (socket) => {
   socket.on('joinProject', async ({ projectId, userId }) => {
     socket.join(projectId);
     const user = await User.findById(userId);
+    socket.data.userId = userId; 
     socket.data.username = user?.username;
     socket.data.profilePicture = user?.profilePicture;
 
@@ -63,16 +65,59 @@ io.on('connection', (socket) => {
     // Get and emit connected users
     const connectedUsers = await getConnectedUsers(projectId);
     io.to(projectId).emit('connectedUsers', connectedUsers);
+
+    // Notify others that a user joined
+    socket.to(projectId).emit('userJoined', {
+      id: userId,
+      username: user?.username,
+    });
   });
 
 
-  socket.on('codeChange', ({ projectId, userId, range, text }) => {
-    socket.to(projectId).emit('codeChange', { userId, range, text });
+  // Handle operational transformation updates
+  socket.on('collabUpdate', async ({ projectId, version, updates, clientID }) => {
+    // Broadcast to all other clients
+    socket.to(projectId).emit('collabUpdate', {
+      version: version + 1,
+      updates,
+      clientID
+    });
+
+    // Update database with latest version
+    const project = await Editor.findById(projectId);
+    if (project) {
+      project.version = version + 1;
+      await project.save();
+    }
   });
 
-  // Handle cursor position updates
-  socket.on('cursorPosition', ({ projectId, userId, position }) => {
-    socket.to(projectId).emit('cursorMoved', { userId, position });
+
+
+  socket.on('userLeft', async ({ projectId, userId }) => {
+    socket.to(projectId).emit('userLeft', userId);
+    const connectedUsers = await getConnectedUsers(projectId);
+    io.to(projectId).emit('connectedUsers', connectedUsers);
+  });
+
+  // Handle language changes
+  socket.on('languageChanged', async ({ projectId, userId, language }) => {
+    const project = await Editor.findById(projectId);
+    if (project) {
+      project.language = language;
+      await project.save();
+    }
+    // Broadcast to others
+    socket.to(projectId).emit('languageChanged', { userId, language });
+  });
+
+  // Handle collaborative output
+  socket.on('outputChanged', async ({ projectId, output }) => {
+    const project = await Editor.findById(projectId);
+    if (project) {
+      project.lastOutput = output;
+      await project.save();
+    }
+    io.to(projectId).emit('outputChanged', output);
   });
 
 
@@ -80,7 +125,12 @@ io.on('connection', (socket) => {
   socket.on('requestInitialCode', async (projectId) => {
     const project = await Editor.findById(projectId);
     if (project) {
-      socket.emit('initialCode', project.code || '// Start coding here');
+      socket.emit('initialCode', {
+        code: project.code || '',
+        language: project.language || 'javascript',
+        version: project.version || 0,
+        lastOutput: project.lastOutput || { output: '', error: null, executionTime: 0 },
+      });
     }
   });
 
@@ -124,6 +174,10 @@ io.on('connection', (socket) => {
       // Get updated list of connected users for the room
       const connectedUsers = await getConnectedUsers(room);
       io.to(room).emit('connectedUsers', connectedUsers);
+      // Notify others that a user left
+      if (socket.data.userId) {
+        io.to(room).emit('userLeft', socket.data.userId);
+      }
     }
   });
 });

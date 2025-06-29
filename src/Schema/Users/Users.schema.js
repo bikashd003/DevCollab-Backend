@@ -38,6 +38,7 @@ type User {
     users: [User]
     user: User
     getCurrentUserId: ID
+    getCurrentUser: User
   }
 
  extend type Mutation {

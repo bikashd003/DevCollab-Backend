@@ -24,6 +24,12 @@ const usersResolvers = {
         throw new AuthenticationError('You must be logged in');
       }
       return context.user._id;
+    },
+    getCurrentUser: async (parent, args, context) => {
+      if (!context.user) {
+        throw new AuthenticationError('You must be logged in');
+      }
+      return context.user;
     }
   },
   Mutation: {
