@@ -74,21 +74,22 @@ io.on('connection', (socket) => {
   });
 
 
-  // Handle operational transformation updates
-  socket.on('collabUpdate', async ({ projectId, version, updates, clientID }) => {
-    // Broadcast to all other clients
-    socket.to(projectId).emit('collabUpdate', {
-      version: version + 1,
-      updates,
-      clientID
-    });
-
-    // Update database with latest version
-    const project = await Editor.findById(projectId);
-    if (project) {
-      project.version = version + 1;
-      await project.save();
+  // Handle code changes
+  socket.on('codeChange', async ({ projectId, userId, changes }) => {
+    // Save to database
+    if (changes && changes.length > 0) {
+      const project = await Editor.findById(projectId);
+      if (project) {
+        project.code = changes[0].insert;
+        await project.save();
+      }
     }
+    
+    // Broadcast to all other clients except sender
+    socket.to(projectId).emit('codeChange', {
+      userId,
+      changes
+    });
   });
 
 
