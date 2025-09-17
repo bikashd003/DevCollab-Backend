@@ -1,5 +1,5 @@
 {
-  "name": "devlearn-backend",
+  "name": "devcollab-backend",
   "version": "1.0.0",
   "description": "Backend for a developer collaboration platform where developers can share and write code collaboratively",
   "main": "app.js",
@@ -52,7 +52,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/bikashd003/DevLearn-Backend.git"
+    "url": "https://github.com/bikashd003/DevCollab-Backend.git"
   },
   "keywords": [
     "developer",
