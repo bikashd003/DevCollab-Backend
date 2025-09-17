@@ -11,6 +11,7 @@ import { apiLimiter } from '../Utils/ApiLimiter.js';
 import helmet from 'helmet';
 import setupLocalAuth from '../Auth/LocalAuth.js';
 import localAuthRouter from '../Routes/Auth/LocalAuth.routes.js';
+import oauthRouter from '../Routes/Auth/OAuthRoutes.js';
 
 
 const Root = (app) => {
@@ -20,19 +21,17 @@ const Root = (app) => {
     app.use(cookieParser())
     app.use(helmet());
 
-    // Session configuration
     app.use(session({
         secret: process.env.SESSION_SECRET,
         resave: false,
         saveUninitialized: false,
         cookie: { secure: process.env.NODE_ENV === 'production' }
     }));
-    //Initialize passport
+
     app.use(passport.initialize());
     app.use(passport.session());
     setupLocalAuth(passport);
 
-    // Middleware to log route, time, and errors
     app.use((req, res, next) => {
         const start = Date.now();
         const originalEnd = res.end;
@@ -63,12 +62,10 @@ const Root = (app) => {
 
         next();
     });
-    //apply rate limit to all route
     app.use(apiLimiter)
 
-    //Local auth routes
     app.use('/auth', localAuthRouter);
-    // Logout route
+    app.use('/auth', oauthRouter);
     app.get('/logout', (req, res) => {
         req.logout((err) => {
             if (err) { return next(err); }
@@ -77,7 +74,6 @@ const Root = (app) => {
     });
     app.use('/cloudinary', uploadRouter)
 
-    // Global Error Handler
     app.use((err, req, res, next) => {
         logger.error(err.stack);
         res.status(500).json({ error: 'Internal Server Error' });

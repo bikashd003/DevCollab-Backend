@@ -6,6 +6,7 @@ import typeDefs from './src/Graphql/GraphQL.schema.js';
 import resolvers from './src/Graphql/GraphQL.resolver.js';
 import Root from './src/Middleware/Root.middlleware.js';
 import authMiddleware from './src/Middleware/Auth/Auth.middleware.js';
+import socketAuthMiddleware from './src/Middleware/Socket/SocketAuth.middleware.js';
 import chalk from 'chalk';
 import { Server } from "socket.io";
 import http from 'http';
@@ -18,17 +19,17 @@ dotenv.config({ path: "./.env" });
 const app = express();
 const httpServer = http.createServer(app);
 
-// Basic middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Socket.IO setup
 const io = new Server(httpServer, {
   cors: {
     origin: process.env.CLIENT_URL,
     credentials: true
   }
 });
+
+io.use(socketAuthMiddleware);
 async function getConnectedUsers(roomId) {
   const socketIds = Array.from(io.sockets.adapter.rooms.get(roomId) || []);
   const users = await Promise.all(
@@ -44,39 +45,38 @@ async function getConnectedUsers(roomId) {
   return users;
 }
 io.on('connection', (socket) => {
-  console.log('A user connected:', socket.id);
+  console.log(`Authenticated user connected: ${socket.user.username} (${socket.id})`);
 
   // Join a project room
-  socket.on('joinProject', async ({ projectId, userId }) => {
+  socket.on('joinProject', async ({ projectId }) => {
     socket.join(projectId);
-    const user = await User.findById(userId);
-    socket.data.userId = userId; 
-    socket.data.username = user?.username;
-    socket.data.profilePicture = user?.profilePicture;
 
-    // Get chat history and emit only to the joining socket
+    const userId = socket.userId;
+    const user = socket.user;
+
+    socket.data.userId = userId;
+    socket.data.username = user.username;
+    socket.data.profilePicture = user.profilePicture;
+
     const chatHistory = await Editor.findOne({ _id: projectId })
       .populate('chatHistory.username', 'username')
       .select('chatHistory -_id');
 
-    // Emit chat history only to the joining user
     socket.emit('chatHistory', chatHistory);
 
-    // Get and emit connected users
     const connectedUsers = await getConnectedUsers(projectId);
     io.to(projectId).emit('connectedUsers', connectedUsers);
 
-    // Notify others that a user joined
     socket.to(projectId).emit('userJoined', {
       id: userId,
-      username: user?.username,
+      username: user.username,
     });
   });
 
 
-  // Handle code changes
-  socket.on('codeChange', async ({ projectId, userId, changes }) => {
-    // Save to database
+  socket.on('codeChange', async ({ projectId, changes }) => {
+    const userId = socket.userId;
+
     if (changes && changes.length > 0) {
       const project = await Editor.findById(projectId);
       if (project) {
@@ -84,8 +84,7 @@ io.on('connection', (socket) => {
         await project.save();
       }
     }
-    
-    // Broadcast to all other clients except sender
+
     socket.to(projectId).emit('codeChange', {
       userId,
       changes
@@ -94,24 +93,23 @@ io.on('connection', (socket) => {
 
 
 
-  socket.on('userLeft', async ({ projectId, userId }) => {
+  socket.on('userLeft', async ({ projectId }) => {
+    const userId = socket.userId;
     socket.to(projectId).emit('userLeft', userId);
     const connectedUsers = await getConnectedUsers(projectId);
     io.to(projectId).emit('connectedUsers', connectedUsers);
   });
 
-  // Handle language changes
-  socket.on('languageChanged', async ({ projectId, userId, language }) => {
+  socket.on('languageChanged', async ({ projectId, language }) => {
+    const userId = socket.userId;
     const project = await Editor.findById(projectId);
     if (project) {
       project.language = language;
       await project.save();
     }
-    // Broadcast to others
     socket.to(projectId).emit('languageChanged', { userId, language });
   });
 
-  // Handle collaborative output
   socket.on('outputChanged', async ({ projectId, output }) => {
     const project = await Editor.findById(projectId);
     if (project) {
@@ -122,7 +120,6 @@ io.on('connection', (socket) => {
   });
 
 
-  // Handle initial code state
   socket.on('requestInitialCode', async (projectId) => {
     const project = await Editor.findById(projectId);
     if (project) {
@@ -135,27 +132,24 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Handle chat messages
-  socket.on('chatMessage', async ({ projectId, user, text }) => {
-    // Get user details
-    const userDetails = await User.findById(user).select('username');
+  socket.on('chatMessage', async ({ projectId, text }) => {
+    // Use authenticated user data
+    const userId = socket.userId;
+    const user = socket.user;
 
-    // Emit message with proper structure
     io.to(projectId).emit('chatMessage', {
-      username: userDetails,
+      username: { username: user.username },
       message: text,
       timestamp: new Date()
     });
 
-    // Save to database
     Editor.findOneAndUpdate(
       { _id: projectId },
-      { $push: { chatHistory: { username: user, message: text, timestamp: new Date() } } },
+      { $push: { chatHistory: { username: userId, message: text, timestamp: new Date() } } },
       { new: true }
     ).catch((err) => console.error('Error saving chat message:', err));
   });
   socket.on('typing', ({ projectId }) => {
-    // Get username from socket or user data
     const username = socket.data.username;
     socket.to(projectId).emit('userTyping', username);
   });
@@ -164,18 +158,14 @@ io.on('connection', (socket) => {
     const username = socket.data.username;
     socket.to(projectId).emit('userStoppedTyping', username);
   });
-  // Handle disconnection
   socket.on('disconnect', async () => {
     console.log('A user disconnected:', socket.id);
 
-    // Get all rooms this socket was in
     const rooms = Array.from(socket.rooms);
 
     for (const room of rooms) {
-      // Get updated list of connected users for the room
       const connectedUsers = await getConnectedUsers(room);
       io.to(room).emit('connectedUsers', connectedUsers);
-      // Notify others that a user left
       if (socket.data.userId) {
         io.to(room).emit('userLeft', socket.data.userId);
       }
