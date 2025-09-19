@@ -1,3 +1,4 @@
+import { AuthenticationError } from "apollo-server-express";
 import { Skill } from "../../Models/Users/Skills.model.js";
 import { User } from "../../Models/Users/Users.model.js";
 
@@ -14,6 +15,13 @@ const skillResolvers = {
         throw new AuthenticationError('You must be logged in');
       }
       return await Skill.findById(args.id)
+    },
+    getUserSkills: async (parent, args, context) => {
+      if (!context.user) {
+        throw new AuthenticationError('You must be logged in');
+      }
+      const user = await User.findById(context.user._id).populate('skills');
+      return user.skills || [];
     }
   },
   Mutation: {
