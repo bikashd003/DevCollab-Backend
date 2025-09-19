@@ -48,6 +48,14 @@ const userSchema = new mongoose.Schema({
     type: String,
     maxlength: 500
   },
+  location: {
+    type: String,
+    trim: true
+  },
+  company: {
+    type: String,
+    trim: true
+  },
   lastLogin: {
     type: Date
   },
@@ -98,7 +106,6 @@ const userSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-// Hash password before saving to database
 userSchema.pre('save', async function (next) {
   if (this.isModified('password')) {
     const salt = await bcrypt.genSalt(10);
@@ -107,7 +114,6 @@ userSchema.pre('save', async function (next) {
   next();
 });
 
-// Method to compare password
 userSchema.methods.comparePassword = function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };

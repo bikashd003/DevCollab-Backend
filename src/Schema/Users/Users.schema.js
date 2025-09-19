@@ -19,9 +19,11 @@ type User {
     name: String
     email: String!
     profilePicture: String
-    bio:String
+    bio: String
+    location: String
+    company: String
     lastLogin: String
-    isActive:Boolean
+    isActive: Boolean
     githubId: String
     googleId: String
     socialLinks: [String]
@@ -41,10 +43,17 @@ type User {
     getCurrentUser: User
   }
 
+type DeleteAccountResponse {
+  success: Boolean!
+  message: String!
+}
+
  extend type Mutation {
     createUser(username: String, email: String!, password: String!): User
     deleteUser(id: ID!): User
+    deleteCurrentUserAccount: DeleteAccountResponse!
     updateUserProfilePicture(profilePicture: String!): User
+    updateUserDetails(name: String, bio: String, location: String, company: String, socialLinks: [String], contacts: [String], activities: [String]): User
   }
 `;
 
