@@ -15,7 +15,25 @@ import oauthRouter from '../Routes/Auth/OAuthRoutes.js';
 
 
 const Root = (app) => {
-    app.use(cors({ credentials: true, origin: process.env.CLIENT_URL }));
+    const allowedOrigins = [
+        process.env.CLIENT_URL, // Production frontend
+        'http://localhost:3000', // Development frontend
+    ].filter(Boolean);
+
+    app.use(cors({
+        credentials: true,
+        origin: (origin, callback) => {
+            // Allow requests with no origin (like mobile apps or curl requests)
+            if (!origin) return callback(null, true);
+
+            if (allowedOrigins.includes(origin)) {
+                return callback(null, true);
+            }
+
+            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+            return callback(new Error(msg), false);
+        }
+    }));
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
     app.use(cookieParser())

@@ -11,8 +11,6 @@ import chalk from 'chalk';
 import { Server } from "socket.io";
 import http from 'http';
 import Editor from './src/Models/Editor/Editor.model.js';
-import { Message } from './src/Models/Messages/Message.model.js';
-import { Conversation } from './src/Models/Messages/Conversation.model.js';
 import { User } from './src/Models/Users/Users.model.js';
 import codeExecutionRouter from './src/Routes/CodeExecution.route.js';
 import messagesRouter from './src/Routes/Messages/Messages.route.js';
@@ -25,9 +23,16 @@ const httpServer = http.createServer(app);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Allow both development and production origins for Socket.IO
+const allowedOrigins = [
+  process.env.CLIENT_URL, // Production frontend
+  'http://localhost:3000', // Development frontend
+  'http://127.0.0.1:3000'  // Alternative localhost
+].filter(Boolean);
+
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CLIENT_URL,
+    origin: allowedOrigins,
     credentials: true
   }
 });
@@ -280,7 +285,7 @@ const startServer = async () => {
     server.applyMiddleware({
       app,
       cors: {
-        origin: process.env.CLIENT_URL,
+        origin: allowedOrigins,
         credentials: true,
       },
       path: '/graphql' // Explicitly set the path
