@@ -7,6 +7,7 @@ import { activityResolvers } from '../Resolver/Users/Activities.resolver.js';
 import { questionResolvers } from '../Resolver/Questions/Question.resolver.js';
 import { blogResolvers } from '../Resolver/Blogs/Blogs.resolver.js';
 import { editorResolvers } from '../Resolver/Editor/Editor.resolver.js';
+import { messageResolvers } from '../Resolver/Messages/Message.resolver.js';
 
 const resolvers = {
   Query: {
@@ -19,6 +20,7 @@ const resolvers = {
     ...questionResolvers.Query,
     ...blogResolvers.Query,
     ...editorResolvers.Query,
+    ...messageResolvers.Query,
   },
   Mutation: {
     ...usersResolvers.Mutation,
@@ -30,6 +32,10 @@ const resolvers = {
     ...questionResolvers.Mutation,
     ...blogResolvers.Mutation,
     ...editorResolvers.Mutation,
+    ...messageResolvers.Mutation,
+  },
+  Subscription: {
+    ...messageResolvers.Subscription,
   },
 };
 

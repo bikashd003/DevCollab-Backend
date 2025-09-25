@@ -11,8 +11,11 @@ import chalk from 'chalk';
 import { Server } from "socket.io";
 import http from 'http';
 import Editor from './src/Models/Editor/Editor.model.js';
+import { Message } from './src/Models/Messages/Message.model.js';
+import { Conversation } from './src/Models/Messages/Conversation.model.js';
 import { User } from './src/Models/Users/Users.model.js';
 import codeExecutionRouter from './src/Routes/CodeExecution.route.js';
+import messagesRouter from './src/Routes/Messages/Messages.route.js';
 
 dotenv.config({ path: "./.env" });
 
@@ -44,10 +47,24 @@ async function getConnectedUsers(roomId) {
   );
   return users;
 }
-io.on('connection', (socket) => {
+io.on('connection', async (socket) => {
   console.log(`Authenticated user connected: ${socket.user.username} (${socket.id})`);
 
-  // Join a project room
+  await User.findByIdAndUpdate(socket.userId, {
+    isOnline: true,
+    lastOnline: new Date()
+  });
+
+  socket.join(`user_${socket.userId}`);
+
+  const user = await User.findById(socket.userId).populate('connections', '_id');
+  user.connections.forEach(connection => {
+    socket.to(`user_${connection._id}`).emit('userOnlineStatus', {
+      userId: socket.userId,
+      isOnline: true
+    });
+  });
+
   socket.on('joinProject', async ({ projectId }) => {
     socket.join(projectId);
 
@@ -133,7 +150,6 @@ io.on('connection', (socket) => {
   });
 
   socket.on('chatMessage', async ({ projectId, text }) => {
-    // Use authenticated user data
     const userId = socket.userId;
     const user = socket.user;
 
@@ -158,8 +174,66 @@ io.on('connection', (socket) => {
     const username = socket.data.username;
     socket.to(projectId).emit('userStoppedTyping', username);
   });
+
+  socket.on('joinUserRoom', () => {
+    socket.join(`user_${socket.userId}`);
+    console.log(`User ${socket.user.username} joined personal room: user_${socket.userId}`);
+  });
+
+  socket.on('sendDirectMessage', async ({ receiverId, message }) => {
+    try {
+      io.to(`user_${receiverId}`).emit('newMessage', {
+        id: message.id,
+        senderId: socket.userId,
+        senderUsername: socket.user.username,
+        senderProfilePicture: socket.user.profilePicture,
+        content: message.content,
+        createdAt: message.createdAt,
+        conversationId: message.conversationId
+      });
+
+      socket.emit('messageSent', { messageId: message.id });
+    } catch (error) {
+      socket.emit('messageError', { error: 'Failed to send message' });
+    }
+  });
+
+  socket.on('markMessageRead', ({ messageId, senderId }) => {
+    io.to(`user_${senderId}`).emit('messageRead', { messageId });
+  });
+
+  socket.on('userTypingMessage', ({ receiverId }) => {
+    io.to(`user_${receiverId}`).emit('userTypingMessage', {
+      userId: socket.userId,
+      username: socket.user.username
+    });
+  });
+
+  socket.on('userStoppedTypingMessage', ({ receiverId }) => {
+    io.to(`user_${receiverId}`).emit('userStoppedTypingMessage', {
+      userId: socket.userId
+    });
+  });
+
   socket.on('disconnect', async () => {
     console.log('A user disconnected:', socket.id);
+
+    if (socket.userId) {
+      await User.findByIdAndUpdate(socket.userId, {
+        isOnline: false,
+        lastOnline: new Date()
+      });
+
+      const user = await User.findById(socket.userId).populate('connections', '_id');
+      if (user) {
+        user.connections.forEach(connection => {
+          socket.to(`user_${connection._id}`).emit('userOnlineStatus', {
+            userId: socket.userId,
+            isOnline: false
+          });
+        });
+      }
+    }
 
     const rooms = Array.from(socket.rooms);
 
@@ -173,20 +247,19 @@ io.on('connection', (socket) => {
   });
 });
 
-
-// Apply Root middleware
 Root(app);
 
-// Start Apollo Server
+
 const startServer = async () => {
   try {
-    // Connect to MongoDB
     await connectDb();
+    app.get('/', (req, res) => {
+      res.send('Hello World!');
+    });
 
-    // Apply REST API routes before Apollo
     app.use('/api', codeExecutionRouter);
+    app.use('/api/messages', messagesRouter);
 
-    // Apollo Server setup
     const server = new ApolloServer({
       typeDefs,
       resolvers,
@@ -202,10 +275,8 @@ const startServer = async () => {
 
     await server.start();
 
-    // Apply auth middleware
     app.use('/graphql', authMiddleware);
 
-    // Apply Apollo middleware
     server.applyMiddleware({
       app,
       cors: {
@@ -215,16 +286,13 @@ const startServer = async () => {
       path: '/graphql' // Explicitly set the path
     });
 
-    // Error handling for undefined routes - must be after all other routes
     app.use((req, res, next) => {
       res.status(404).json({ error: 'Not Found' });
     });
 
-    // Start the server
     const PORT = process.env.PORT || 5000;
     httpServer.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
-      console.log(`GraphQL Playground available at http://localhost:${PORT}${server.graphqlPath}`);
     });
   } catch (err) {
     console.error('Error starting server:', err);

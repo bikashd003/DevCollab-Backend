@@ -15,7 +15,7 @@ const usersResolvers = {
       const user = await User.findById(context.user._id)
         .populate('projects')
         .populate('skills')
-        .lean();
+        .populate('connections', 'username profilePicture isOnline lastOnline');
 
       return user;
     },
@@ -32,7 +32,7 @@ const usersResolvers = {
       const user = await User.findById(context.user._id)
         .populate('projects')
         .populate('skills')
-        .lean();
+        .populate('connections', 'username profilePicture isOnline lastOnline');
 
       return user;
     }

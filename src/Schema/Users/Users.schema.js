@@ -31,6 +31,9 @@ type User {
     contacts: [String]
     projects: [Project!]
     activities: [String]
+    connections: [User!]
+    isOnline: Boolean
+    lastOnline: String
     role: String
     createdAt: String
     updatedAt: String
